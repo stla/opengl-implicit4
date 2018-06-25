@@ -1,0 +1,285 @@
+name:                opengl-implicit4
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/opengl-implicit4#readme
+license:             GPL-3
+author:              Stéphane Laurent
+maintainer:          laurent_step@yahoo.fr
+copyright:           2018 Stéphane Laurent
+category:            Graphics
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+flag exe
+  description: build the executables
+  default:     False
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     MarchingCubes.Voxel
+                     , MarchingCubes.ComputeContour3d
+                     , MarchingCubes.OpenGL
+                     , MarchingCubes.Utils.Triangles
+                     , MarchingCubes
+                     , Utils.OpenGL
+                     , Goursat
+                     , Bretzel5
+                     , Bretzel5Colored
+                     , Orthocircle
+                     , Utils.Palettes
+                     , GoursatColored
+                     , Decocube
+                     , BanchoffChmutov
+                     , KusnerSchmitt
+                     , SuperEllipsoid
+                     , Pretzel
+                     , KleinBottle
+                     , Valentine
+                     , Utils.ConvertPPM
+                     , Spikes
+                     , Spikes2D
+                     , Utils.Misc
+                     , Spiral
+                     , WonderTree
+                     , Pilz
+                     , CubeOctahedron
+                     , Cyclide
+                     , Ztest
+  build-depends:       base >= 4.7 && < 5
+                     , OpenGL
+                     , GLUT
+                     , split
+                     , extra
+                     , numeric-tools
+                     , vector
+                     , containers
+                     , polynomial
+                     , gl-capture
+                     , bytestring
+                     , hip
+                     , directory
+  default-language:    Haskell2010
+  other-extensions:    ForeignFunctionInterface
+  include-dirs:        C
+  C-sources:           C/utils.c
+                     , C/tables.c
+                     , C/marchingCubes.c
+  ghc-options:         -Wall
+
+-- executable testmc
+--   hs-source-dirs:      src-exe
+--   main-is:             Main.hs
+--   build-depends:       base >= 4.7 && < 5
+--                      , opengl-implicit4
+--   default-language:    Haskell2010
+
+executable goursat
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeGoursat.hs
+  ghc-options:         -fllvm -main-is ExeGoursat
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable goursatcolored
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeGoursatColored.hs
+  ghc-options:         -fllvm -main-is ExeGoursatColored
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable bretzel5
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeBretzel5.hs
+  ghc-options:         -fllvm -main-is ExeBretzel5
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable bretzel5colored
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeBretzel5Colored.hs
+  ghc-options:         -fllvm -main-is ExeBretzel5Colored
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable orthocircle
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeOrthocircle.hs
+  ghc-options:         -fllvm -main-is ExeOrthocircle
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable decocube
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeDecocube.hs
+  ghc-options:         -fllvm -main-is ExeDecocube
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable banchoffchmutov
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeBanchoffChmutov.hs
+  ghc-options:         -fllvm -main-is ExeBanchoffChmutov
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable kusnerschmitt
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeKusnerSchmitt.hs
+  ghc-options:         -fllvm -main-is ExeKusnerSchmitt
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable superellipsoid
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeSuperEllipsoid.hs
+  ghc-options:         -fllvm -main-is ExeSuperEllipsoid
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable pretzel
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExePretzel.hs
+  ghc-options:         -fllvm -main-is ExePretzel
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable valentine
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeValentine.hs
+  ghc-options:         -fllvm -main-is ExeValentine
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable spikes
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeSpikes.hs
+  ghc-options:         -fllvm -main-is ExeSpikes
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable spiral
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeSpiral.hs
+  ghc-options:         -fllvm -main-is ExeSpiral
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable spikes2D
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeSpikes2D.hs
+  ghc-options:         -fllvm -main-is ExeSpikes2D
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable wondertree
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeWonderTree.hs
+  ghc-options:         -fllvm -main-is ExeWonderTree
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable pilz
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExePilz.hs
+  ghc-options:         -fllvm -main-is ExePilz
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+executable cyclide
+  if flag(exe)
+    buildable: True
+  else
+    buildable: False
+  hs-source-dirs:      src-exe
+  main-is:             ExeCyclide.hs
+  ghc-options:         -fllvm -main-is ExeCyclide
+  build-depends:       base >= 4.7 && < 5
+                     , opengl-implicit4
+  default-language:    Haskell2010
+
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/opengl-implicit4
