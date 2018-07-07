@@ -46,7 +46,6 @@ library
                      , Pilz
                      , CubeOctahedron
                      , Cyclide
-                     , Ztest
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT

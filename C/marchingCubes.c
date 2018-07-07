@@ -3,6 +3,57 @@
 #include "marchingCubes.h"
 #endif
 
+unsigned* FacesNo7(int* faces, size_t* p1, double* values, size_t l, unsigned j){
+    unsigned* index = malloc(l * sizeof(unsigned));
+    for(size_t i=0; i<l; i++){
+      unsigned f = abs(faces[i])-1;
+      unsigned e1 = FacePoints[f][1];
+      unsigned e2 = FacePoints[f][2];
+      unsigned e3 = FacePoints[f][3];
+      unsigned e4 = FacePoints[f][4];
+      size_t p = p1[i]-2;
+      double A = values[p+e1];
+      double B = values[p+e2];
+      double C = values[p+e3];
+      double D = values[p+e4];
+      int temp = faces[i]>0 ? 1 : -1;
+      temp *= (A*B-C*D>0 ? 1 : -1);
+      index[i] = temp == 1 ? upow(2,j-1) : 0;
+    }
+    return(index);
+}
+
+unsigned* Faces7(int* faces, size_t* p1, double* values, size_t l, unsigned j){
+  unsigned* index = malloc(l * sizeof(unsigned));
+  for(size_t i=0; i<l; i++){
+    size_t p = p1[i] - 1;
+    double A0 = values[p];
+    double B0 = values[p+3];
+    double C0 = values[p+2];
+    double D0 = values[p+1];
+    double A1 = values[p+4];
+    double B1 = values[p+7];
+    double C1 = values[p+6];
+    double D1 = values[p+5];
+    double a = (A1 - A0) * (C1 - C0) - (B1 - B0) * (D1 - D0);
+    double b = C0 * (A1 - A0) + A0 * (C1 - C0) - D0 * (B1 - B0) - B0 * (D1 - D0);
+    double c = A0 * C0 - B0 * D0;
+    double tmax = -b/(2 * a);
+    double maximum = a * tmax*tmax + b * tmax + c;
+    maximum = isnan(maximum) ? -1 : maximum;
+    //printf("maximum: %f\n", maximum);
+    unsigned cond1 = a<0 ? 1 : 0;
+    unsigned cond2 = tmax>0 ? 1 : 0;
+    unsigned cond3 = tmax<1 ? 1 : 0;
+    unsigned cond4 = maximum>0 ? 1 : 0;
+    unsigned totalcond = cond1*cond2*cond3*cond4;
+    int temp = faces[i]>0 ? 1 : -1;
+    temp *= (totalcond == 1 ? 1 : -1);
+    index[i] = temp == 1 ? upow(2,j-1) : 0;
+  }
+  return index;
+}
+
 size_t** faceType(double** M, unsigned m, unsigned n, double level, double max){
     size_t** L = levelMatrix(M, m, n, level, level<max);
     size_t** minorMat = minorMatrix(L,m,n,m-1,n-1);
@@ -183,17 +234,10 @@ double** GetPoints(size_t** cubeco, double* values, size_t* p1, unsigned* x1,
     unsigned* p1x1 = malloc(n * sizeof(unsigned));
     unsigned* p1x2 = malloc(n * sizeof(unsigned));
     double* xx1 = malloc(n * sizeof(double));
-    // printf("p1x1, p1x2, xx1\n");
     for(size_t i=0; i<n; i++){
-        p1x1[i] = p1[i] + x1[i];
-        p1x2[i] = p1[i] + x2[i];
+        p1x1[i] = p1[i] + x1[i]; p1x2[i] = p1[i] + x2[i];
         xx1[i] = (double) x1[i];
     }
-    // if(n > 74){
-    //   printf("p1[74]=%lu\n", (unsigned long)p1[74]);
-    //   printf("x1[74]=%u\n", x1[74]);
-    // }
-    // printf("lambdamu\n");
     double** lambdamu = LambdaMu(xx1, n);
     double* v1 = malloc(n * sizeof(double));
     double* v2 = malloc(n * sizeof(double));
@@ -209,15 +253,9 @@ double** GetPoints(size_t** cubeco, double* values, size_t* p1, unsigned* x1,
     double* w4 = malloc(n * sizeof(double));
     double* w5 = malloc(n * sizeof(double));
     double* w6 = malloc(n * sizeof(double));
-    // printf("fill vectors\n");
     for(size_t i=0; i<n; i++){
-        // printf("i=%lu\n", (unsigned long)i);
-        // printf("v1\n");
-        // printf("p1x1[i]-2=%u\n", p1x1[i]-2);
         v1[i] = (double) cubeco[p1x1[i]-2][0];
-        // printf("w1\n");
         w1[i] = (double) cubeco[p1[i]-1][0];
-        // printf("v2\n");
         v2[i] = (double) cubeco[p1x2[i]-2][0];
         w2[i] = (double) cubeco[p1[i]][0];
         v3[i] = (double) cubeco[p1x1[i]-2][1];
@@ -227,16 +265,12 @@ double** GetPoints(size_t** cubeco, double* values, size_t* p1, unsigned* x1,
         v5[i] = (double) cubeco[p1x1[i]-2][2];
         w5[i] = (double) cubeco[p1[i]][2];
         v6[i] = (double) cubeco[p1x2[i]-2][2];
-        // printf("w6\n");
         w6[i] = (double) cubeco[p1[i]+4][2];
-        // printf("v7\n");
         v7[i] = values[p1x1[i]-2];
-        // printf("v8\n");
         v8[i] = values[p1x2[i]-2];
     }
     free(p1x1);
     free(p1x2);
-    // printf("fill out\n");
     double** out = malloc(8 * sizeof(double*));
     out[0] = average(lambdamu, v1, w1, n);
     free(v1); free(w1);
@@ -256,8 +290,6 @@ double** GetPoints(size_t** cubeco, double* values, size_t* p1, unsigned* x1,
     free(v8);
     freeMatrix_d(lambdamu,2);
     free(xx1);
-    // free(v1); free(v2); free(v3); free(v4); free(v5); free(v6); free(v7); free(v8);
-    // free(w1); free(w2); free(w3); free(w4); free(w5); free(w6);
     return(out);
 }
 
@@ -295,7 +327,7 @@ double** computeContour3d(
     size_t* ntriangles)
 {
     printf("Start marching cubes algorithm\n");
-    double*** voxel = vector2array(voxelAsVector, nx, ny, nz); // faire free ?
+    double*** voxel = vector2array(voxelAsVector, nx, ny, nz);
     size_t nrow;
     unsigned** ijkt = levCells(voxel, nx, ny, nz, level, max, &nrow);
     unsigned* tcase = get_tcase(ijkt[3], nrow);
@@ -387,7 +419,7 @@ double** computeContour3d(
             unsigned* index3;
             int* faces3 = unlist(Faces, FacesSizes, cases3, nR3, &outlength3);
             printf("outlength3: %u\n", outlength3);
-            printf("nR: %u\n", nR3); // yes, outlength3 = nR3 !
+            printf("nR3: %u\n", nR3); // yes, outlength3 = nR3 ! ? check
             if(c == 0){
               index3 = FacesNo7(faces3, p13, values3, nR3, 1);
             }else if(c == 1){
@@ -460,7 +492,7 @@ double** computeContour3d(
                 if(triangles==NULL){
             			printf("Error reallocating memory!");
             			freeMatrix_d(triangles, totalLength3);
-                  // free les trucs de la fin ?
+                  // free les free de la fin ?
             			exit(1);
             		}
                 for(size_t i = *ntriangles; i < *ntriangles + totalLength3; i++){
