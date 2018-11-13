@@ -3,7 +3,10 @@ module Utils.OpenGL
 import           Graphics.Rendering.OpenGL.GL (Color4 (..), GLfloat,
                                                Normal3 (..), Vertex3 (..))
 
-type NTriangle = ((Vertex3 GLfloat, Vertex3 GLfloat, Vertex3 GLfloat), Normal3 GLfloat)
+type Vx3Triangle = (Vertex3 GLfloat, Vertex3 GLfloat, Vertex3 GLfloat)
+type Normal = Normal3 GLfloat
+type NTriangle = (Vx3Triangle, Normal)
+type NNNTriangle = (Vx3Triangle, (Normal, Normal, Normal))
 
 white,black :: Color4 GLfloat
 white = Color4 1 1 1 1
@@ -19,3 +22,8 @@ triangleNormal (Vertex3 x1 x2 x3, Vertex3 y1 y2 y3, Vertex3 z1 z2 z3) =
 
 negateNormal :: Floating a => Normal3 a -> Normal3 a
 negateNormal (Normal3 x y z) = Normal3 (-x) (-y) (-z)
+
+normalize :: Floating a => Normal3 a -> Normal3 a
+normalize (Normal3 x y z) = Normal3 (x/norm) (y/norm) (z/norm)
+  where
+  norm = sqrt(x*x+y*y+z*z)
