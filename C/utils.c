@@ -42,18 +42,8 @@ void freeMatrix_d(double** M, unsigned nx){
     free(M);
 }
 
-unsigned** copyMatrix(unsigned** M, unsigned nx, unsigned ny){
-    unsigned** MM = malloc(nx * sizeof(unsigned*));
-    for(unsigned i=0; i<nx; i++){
-        MM[i] = malloc(ny * sizeof(unsigned));
-        for(unsigned j=0; j<ny; j++){
-            MM[i][j] = M[i][j];
-        }
-    }
-    return MM;
-}
-
-size_t** minorMatrix(size_t** M, unsigned m, unsigned n, unsigned row, unsigned col){
+size_t** minorMatrix(size_t** M, unsigned m, unsigned n, unsigned row,
+                     unsigned col){
     size_t** out = malloc((m-1) * sizeof(size_t*));
     for(unsigned i=0; i<(m-1); i++){
         out[i] = malloc((n-1) * sizeof(size_t));
@@ -77,10 +67,17 @@ size_t** scaleMatrix(size_t k, size_t** M, unsigned m, unsigned n){
     return out;
 }
 
-size_t** scaleMinorMatrix(size_t k, size_t** M, unsigned m, unsigned n, unsigned row, unsigned col){
-    size_t** minorMat = minorMatrix(M,m,n,row,col);
-    size_t** out = scaleMatrix(k, minorMat, m-1, n-1);
-    freeMatrix_s(minorMat, m-1);
+size_t** scaleMinorMatrix(size_t k, size_t** M, unsigned m, unsigned n,
+                          unsigned row, unsigned col){
+    size_t** out = malloc((m-1) * sizeof(size_t*));
+    for(unsigned i=0; i<(m-1); i++){
+        out[i] = malloc((n-1) * sizeof(size_t));
+        unsigned ii = i<row ? i : i+1;
+        for(unsigned j=0; j<(n-1); j++){
+            unsigned jj = j<col ? j : j+1;
+            out[i][j] = k*M[ii][jj];
+        }
+    }
     return out;
 }
 
@@ -95,12 +92,14 @@ size_t** matricialSum(size_t** M1, size_t** M2, size_t m, unsigned n){
     return out;
 }
 
-size_t** levelMatrix(double** M, unsigned m, unsigned n, double level, unsigned strict){
+size_t** levelMatrix(double** M, unsigned m, unsigned n, double level,
+                     unsigned strict){
     size_t** out = malloc(m * sizeof(size_t*));
     for(unsigned i=0; i<m; i++){
         out[i] = malloc(n * sizeof(size_t));
         for(unsigned j=0; j<n; j++){
-            out[i][j] = (strict ? (M[i][j] > level) : (M[i][j] >= level)) ? 1 : 0;
+            out[i][j] =
+              (strict ? (M[i][j] > level) : (M[i][j] >= level)) ? 1 : 0;
         }
     }
     return out;
@@ -117,7 +116,8 @@ double** toMatrix(double*** A, unsigned m, unsigned n, unsigned k){
     return out;
 }
 
-unsigned** whichIndicesAndItems(size_t** M, unsigned m, unsigned n, unsigned* outlength){
+unsigned** whichIndicesAndItems(size_t** M, unsigned m, unsigned n,
+                                unsigned* outlength){
     unsigned** out = malloc(2 * sizeof(unsigned*));
     out[0] = malloc(m*n * sizeof(unsigned));
     out[1] = malloc(m*n * sizeof(unsigned));
@@ -248,57 +248,6 @@ unsigned upow(unsigned base, unsigned exp){
         base *= base;
     }
     return result;
-}
-
-unsigned* FacesNo7(int* faces, size_t* p1, double* values, size_t l, unsigned j){
-    unsigned* index = malloc(l * sizeof(unsigned));
-    for(size_t i=0; i<l; i++){
-      unsigned f = abs(faces[i])-1;
-      unsigned e1 = FacePoints[f][1];
-      unsigned e2 = FacePoints[f][2];
-      unsigned e3 = FacePoints[f][3];
-      unsigned e4 = FacePoints[f][4];
-      size_t p = p1[i]-2;
-      double A = values[p+e1];
-      double B = values[p+e2];
-      double C = values[p+e3];
-      double D = values[p+e4];
-      int temp = faces[i]>0 ? 1 : -1;
-      temp *= (A*B-C*D>0 ? 1 : -1);
-      index[i] = temp == 1 ? upow(2,j-1) : 0;
-    }
-    return(index);
-}
-
-unsigned* Faces7(int* faces, size_t* p1, double* values, size_t l, unsigned j){
-  unsigned* index = malloc(l * sizeof(unsigned));
-  for(size_t i=0; i<l; i++){
-    size_t p = p1[i] - 1;
-    double A0 = values[p];
-    double B0 = values[p+3];
-    double C0 = values[p+2];
-    double D0 = values[p+1];
-    double A1 = values[p+4];
-    double B1 = values[p+7];
-    double C1 = values[p+6];
-    double D1 = values[p+5];
-    double a = (A1 - A0) * (C1 - C0) - (B1 - B0) * (D1 - D0);
-    double b = C0 * (A1 - A0) + A0 * (C1 - C0) - D0 * (B1 - B0) - B0 * (D1 - D0);
-    double c = A0 * C0 - B0 * D0;
-    double tmax = -b/(2 * a);
-    double maximum = a * tmax*tmax + b * tmax + c;
-    maximum = isnan(maximum) ? -1 : maximum;
-    printf("maximum: %f\n", maximum);
-    unsigned cond1 = a<0 ? 1 : 0;
-    unsigned cond2 = tmax>0 ? 1 : 0;
-    unsigned cond3 = tmax<1 ? 1 : 0;
-    unsigned cond4 = maximum>0 ? 1 : 0;
-    unsigned totalcond = cond1*cond2*cond3*cond4;
-    int temp = faces[i]>0 ? 1 : -1;
-    temp *= (totalcond == 1 ? 1 : -1);
-    index[i] = temp == 1 ? upow(2,j-1) : 0;
-  }
-  return index;
 }
 
 // R: matrix(M, ncol=ncol, byrow=TRUE)
