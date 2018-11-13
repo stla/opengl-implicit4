@@ -29,6 +29,7 @@ library
                      , Bretzel5Colored
                      , Bretzel5Smooth
                      , Orthocircle
+                     , OrthocircleSmooth
                      , Utils.Palettes
                      , GoursatColored
                      , Decocube
