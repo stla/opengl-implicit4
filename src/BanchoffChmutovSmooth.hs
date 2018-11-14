@@ -1,6 +1,7 @@
 module BanchoffChmutovSmooth
   (main)
   where
+import           Control.Monad                     (when)
 import qualified Data.ByteString                   as B
 import           Data.IORef
 import           Graphics.Rendering.OpenGL.Capture (capturePPM)
@@ -24,6 +25,10 @@ data Context = Context
 
 blue :: Color4 GLfloat
 blue = Color4 0 0 1 1
+whitesmoke :: Color4 GLfloat
+whitesmoke = Color4 0.96 0.96 0.96 1
+discord :: Color4 GLfloat
+discord = Color4 0.21 0.22 0.25 1
 
 function :: Int -> XYZ -> Double
 function n (x,y,z) = cheb4 x + cheb4 y + cheb4 z
@@ -44,22 +49,24 @@ trianglesBC n l = do
   triangles <- computeContour3d'' (voxel n) Nothing l False
   return $ map (fromTriangle' (gradient n)) triangles
 
-display :: Context -> DisplayCallback
-display context = do
+display :: Context -> IORef GLfloat -> DisplayCallback
+display context alpha = do
   clear [ColorBuffer, DepthBuffer]
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
   triangles <- get (contextTriangles context)
   zoom <- get (contextZoom context)
+  alpha' <- get alpha
   (_, size) <- get viewport
   loadIdentity
   resize zoom size
+  rotate alpha' $ Vector3 1 1 1
   rotate r1 $ Vector3 1 0 0
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
   renderPrimitive Triangles $ do
-    materialDiffuse FrontAndBack $= blue
+    materialDiffuse FrontAndBack $= whitesmoke
     mapM_ drawTriangle triangles
   swapBuffers
   where
@@ -89,9 +96,11 @@ keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef [NNNTriangle]
          -> IORef Double -- zoom
          -> IORef GLint -- screenshot
+         -> IORef Bool -- animation
          -> KeyboardCallback
-keyboard rot1 rot2 rot3 n l trianglesRef zoom capture c _ = do
+keyboard rot1 rot2 rot3 n l trianglesRef zoom capture anim c _ = do
   case c of
+    'a' -> writeIORef anim True
     'e' -> rot1 $~! subtract 2
     'r' -> rot1 $~! (+ 2)
     't' -> rot2 $~! subtract 2
@@ -136,14 +145,27 @@ keyboard rot1 rot2 rot3 n l trianglesRef zoom capture c _ = do
   postRedisplay Nothing
 
 
+idle :: IORef Bool -> IORef GLfloat -> IORef Int -> IdleCallback
+idle anim alpha snapshots = do
+    a <- get anim
+    s <- get snapshots
+    when a $ do
+      when (s < 360) $ do
+        let ppm = printf "ppm/BM%04d.ppm" s
+        (>>=) capturePPM (B.writeFile ppm)
+      alpha $~! (+ 1.0)
+      snapshots $~! (+ 1)
+    postRedisplay Nothing
+
+
 main :: IO ()
 main = do
   _ <- getArgsAndInitialize
   _ <- createWindow "Banchoff-Chmutov surface"
   windowSize $= Size 500 500
   initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
-  clearColor $= white
-  materialAmbient FrontAndBack $= black
+  clearColor $= discord
+  materialAmbient FrontAndBack $= white
   lighting $= Enabled
   lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
@@ -161,15 +183,19 @@ main = do
   l <- newIORef 0.0
   triangles <- trianglesBC 4 0.0
   trianglesRef <- newIORef triangles
+  alpha <- newIORef 0.0
+  snapshots <- newIORef 0
   displayCallback $= display Context {contextRot1 = rot1,
                                       contextRot2 = rot2,
                                       contextRot3 = rot3,
                                       contextZoom = zoom,
                                       contextTriangles = trianglesRef}
+                             alpha
   reshapeCallback $= Just (resize 0)
   capture <- newIORef 0
-  keyboardCallback $= Just (keyboard rot1 rot2 rot3 n l trianglesRef zoom capture)
-  idleCallback $= Nothing
+  anim <- newIORef False
+  keyboardCallback $= Just (keyboard rot1 rot2 rot3 n l trianglesRef zoom capture anim)
+  idleCallback $= Just (idle anim alpha snapshots)
   putStrLn "*** Banchoff-Chmutov ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
@@ -180,5 +206,6 @@ main = do
         \    Increase/decrease isolevel:\n\
         \        h, n\n\
         \    Screenshot: c\n\
+        \    Animation: a\n\
         \"
   mainLoop
