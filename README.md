@@ -28,6 +28,8 @@ Banchoff-Chmutov surfaces:
 
 ![Imgur](https://i.imgur.com/KOApMfA.png)
 
+![gfycat](https://thumbs.gfycat.com/TatteredPeskyCobra-size_restricted.gif)
+
 Kusner-Schmitt surface:
 
 ![Imgur](https://i.imgur.com/kMNiTuZ.png)
