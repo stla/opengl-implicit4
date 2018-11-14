@@ -17,7 +17,6 @@ data Context = Context
     , contextRot2      :: IORef GLfloat
     , contextRot3      :: IORef GLfloat
     , contextZoom      :: IORef Double
---    , contextVoxel     :: IORef Voxel
     , contextTriangles :: IORef [NNNTriangle]
     }
 
@@ -40,25 +39,25 @@ fDecocube a (x,y,z) =
 
 
 gradient :: Double -> XYZ -> XYZ
-gradient a (x,y,z) = 
+gradient a (x,y,z) =
     (
-        4*x*(x2-1)*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
-        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) + 
-        4*x*x2y2a2*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) * 
-        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) + 
-        4*x*z2x2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
+        4*x*(x2-1)*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
+        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) +
+        4*x*x2y2a2*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) *
+        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) +
+        4*x*z2x2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
         (y2z2a2*y2z2a2 + (x2-1)*(x2-1)),
-        4*y*(y2-1)*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
-        (y2z2a2*y2z2a2 + (x2-1)*(x2-1)) + 
-        4*y*x2y2a2*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) * 
-        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) + 
-        4*y*y2z2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
+        4*y*(y2-1)*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
+        (y2z2a2*y2z2a2 + (x2-1)*(x2-1)) +
+        4*y*x2y2a2*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) *
+        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) +
+        4*y*y2z2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
         (z2x2a2*z2x2a2 + (y2-1)*(y2-1)),
-        4*z*(z2-1)*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) * 
-        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) + 
-        4*z*y2z2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
-        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) + 
-        4*z*z2x2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) * 
+        4*z*(z2-1)*(y2z2a2*y2z2a2 + (x2-1)*(x2-1)) *
+        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) +
+        4*z*y2z2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
+        (z2x2a2*z2x2a2 + (y2-1)*(y2-1)) +
+        4*z*z2x2a2*(x2y2a2*x2y2a2 + (z2-1)*(z2-1)) *
         (y2z2a2*y2z2a2 + (x2-1)*(x2-1))
     )
     where
@@ -69,7 +68,7 @@ gradient a (x,y,z) =
         x2y2a2 = x2+y2-a2
         y2z2a2 = y2+z2-a2
         z2x2a2 = z2+x2-a2
-      
+
 -- ((x^2+y^2-a^2)^2 + (z^2-1)^2)((y^2+z^2-a^2)^2 + (x^2-1)^2)((z^2+x^2-a^2)^2 + (y^2-1)^2)
 
 voxel :: Double -> Voxel
@@ -110,7 +109,7 @@ display context alpha = do
         vertex v2
         normal n3
         vertex v3
-  
+
 resize :: Double -> Size -> IO ()
 resize zoom s@(Size w h) = do
   viewport $= (Position 0 0, s)
@@ -126,7 +125,6 @@ resize zoom s@(Size w h) = do
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef Double -- parameter a
          -> IORef Double -- isolevel
---         -> IORef Voxel
          -> IORef [NNNTriangle]
          -> IORef Double -- zoom
          -> IORef Bool -- animation

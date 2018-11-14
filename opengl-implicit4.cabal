@@ -35,6 +35,7 @@ library
                      , Decocube
                      , DecocubeSmooth
                      , BanchoffChmutov
+                     , BanchoffChmutovSmooth
                      , KusnerSchmitt
                      , SuperEllipsoid
                      , Pretzel
