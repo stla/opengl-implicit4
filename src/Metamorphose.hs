@@ -33,12 +33,12 @@ discord = Color4 0.21 0.22 0.25 1
 fun1 :: XYZ -> Double
 fun1 (x,y,z) = cheb4 (x/1.77) + cheb4 (y/1.77) + cheb4 (z/1.77)
   where
-  cheb4 = evalT 4
+  cheb4 = evalT 6
 
 gradient1 :: XYZ -> XYZ
 gradient1 (x,y,z) = (1/1.77 * cheb4' (x/1.77), 1/1.77 * cheb4' (y/1.77), 1/1.77 * cheb4' (z/1.77))
   where
-    cheb4' = evalPoly (polyDeriv (t 4))
+    cheb4' = evalPoly (polyDeriv (t 6))
 
 fun2 :: XYZ -> Double
 fun2 (x,y,z) = x*x*x*x-5*x*x+y*y*y*y-5*y*y+z*z*z*z-5*z*z+11.8
@@ -54,7 +54,7 @@ gradient2 (x,y,z) =
 doubleVoxel :: DoubleVoxel
 doubleVoxel = makeDoubleVoxel fun1 fun2
                               ((-2.3,2.3),(-2.3,2.3),(-2.3,2.3))
-                              (150, 150, 150)
+                              (100, 100, 100)
 voxel :: Double -> Voxel
 voxel = voxelAverage doubleVoxel
 
@@ -168,17 +168,22 @@ keyboard rot1 rot2 rot3 lambda l trianglesRef zoom capture anim c _ = do
   postRedisplay Nothing
 
 
--- idle :: IORef Bool -> IORef GLfloat -> IORef Int -> IdleCallback
--- idle anim alpha snapshots = do
---     a <- get anim
---     s <- get snapshots
---     when a $ do
---       when (s < 360) $ do
---         let ppm = printf "ppm/BM%04d.ppm" s
---         (>>=) capturePPM (B.writeFile ppm)
---       alpha $~! (+ 1.0)
---       snapshots $~! (+ 1)
---     postRedisplay Nothing
+idle :: IORef Bool -> IORef Int -> IORef Double -> IORef Double
+     -> IORef [NNNTriangle] -> IdleCallback
+idle anim snapshots lambda l trianglesRef = do
+    a <- get anim
+    s <- get snapshots
+    when a $ do
+      when (s <= 100) $ do
+        let ppm = printf "ppm/M%04d.ppm" s
+        (>>=) capturePPM (B.writeFile ppm)
+      lambda $~! (+ 0.01)
+      snapshots $~! (+ 1)
+      l' <- get l
+      lambda' <- get lambda
+      triangles <- trianglesBC lambda' l'
+      writeIORef trianglesRef triangles
+    postRedisplay Nothing
 
 
 main :: IO ()
@@ -202,9 +207,9 @@ main = do
   rot2 <- newIORef 0.0
   rot3 <- newIORef 0.0
   zoom <- newIORef 0.0
-  lambda <- newIORef 1.0
+  lambda <- newIORef 0.0
   l <- newIORef 0.0
-  triangles <- trianglesBC 1.0 0.0
+  triangles <- trianglesBC 0.0 0.0
   trianglesRef <- newIORef triangles
   snapshots <- newIORef 0
   displayCallback $= display Context {contextRot1 = rot1,
@@ -216,7 +221,7 @@ main = do
   capture <- newIORef 0
   anim <- newIORef False
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 lambda l trianglesRef zoom capture anim)
-  idleCallback $= Nothing -- Just (idle anim alpha snapshots)
+  idleCallback $= Just (idle anim snapshots lambda l trianglesRef)
   putStrLn "*** Metamorphose ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\

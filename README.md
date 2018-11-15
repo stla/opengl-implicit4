@@ -53,3 +53,7 @@ Animated spiral:
 Dupin cyclide:
 
 ![Imgur](https://i.imgur.com/nWGi8Fo.png)
+
+Metamorphose:
+
+![gfycat](https://thumbs.gfycat.com/SkeletalDismalAlbino-size_restricted.gif)
