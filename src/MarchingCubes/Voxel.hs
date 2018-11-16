@@ -23,7 +23,7 @@ makeVoxel fun ((xm,xM),(ym,yM),(zm,zM)) (nx, ny, nz) =
   values = map fun [(x,y,z) | x <- x_, y <- y_, z <- z_]
 
 voxelMax :: Voxel -> Double
-voxelMax (vox,_,_) = maximum vox
+voxelMax (vox,_,_) = maximum (filter (not . isNaN) vox)
 
 makeDoubleVoxel :: ((Double,Double,Double) -> Double)
           -> ((Double,Double,Double) -> Double)

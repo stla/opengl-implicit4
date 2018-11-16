@@ -20,7 +20,9 @@ red :: Color4 GLfloat
 red = Color4 1 0 0 1
 
 f :: XYZ -> Double
-f (x,y,z) = 4*(phi2*x2-y2)*(phi2*y2-z2)*(phi2*z2-x2) - (1+2*phi)*(x2+y2+z2-1)*(x2+y2+z2-1)
+f (x,y,z) = if x2+y2+z2<3
+  then 4*(phi2*x2-y2)*(phi2*y2-z2)*(phi2*z2-x2) - (1+2*phi)*(x2+y2+z2-1)*(x2+y2+z2-1)
+  else 0/0
   where
   x2 = x*x
   y2 = y*y
@@ -36,7 +38,7 @@ gradient (x,y,z) =
         8*y*phi2*(x2*phi2-y2)*(z2*phi2-x2) - 8*y*(z2*phi2-x2)*(y2*phi2-z2) -
         4*y*(2*phi+1)*(x2+y2+z2-1),
         8*z*phi2*(x2*phi2-y2)*(y2*phi2-z2) - 8*z*(x2*phi2-y2)*(z2*phi2-x2) -
-        4*z*(2*phi+1)*(x2+y2+z2-1),
+        4*z*(2*phi+1)*(x2+y2+z2-1)
     )
     where
         x2 = x*x
@@ -115,14 +117,11 @@ keyboard rot1 rot2 rot3 l trianglesRef zoom c _ = do
              triangles <- trianglesBarth l'
              writeIORef trianglesRef triangles
     'n' -> do
-             l $~! (\x -> if x>0.1 then x-0.1 else x)
+             l $~! (\x -> if x>=0.1 then x-0.1 else x)
              l' <- get l
              putStrLn ("l': " ++ show l')
-             if l'>1e-16
-              then do
-               triangles <- trianglesBarth l'
-               writeIORef trianglesRef triangles
-              else l $~! (+ 0.1)
+             triangles <- trianglesBarth l'
+             writeIORef trianglesRef triangles
     'q' -> leaveMainLoop
     _   -> return ()
   postRedisplay Nothing
@@ -160,7 +159,7 @@ main = do
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 level trianglesRef zoom)
   idleCallback $= Nothing
-  putStrLn "*** Bretzel ***\n\
+  putStrLn "*** Barth sextic ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\
