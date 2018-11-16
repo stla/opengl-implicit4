@@ -506,6 +506,7 @@ double** computeContour3d(
                 freeMatrix_d(triangles3, totalLength3);
               }
             } /* end loop for(unsigned j=0; j<ind3Size; j++) */
+            free(values3);
           } /* end if(nR3>0) */
       } /* end for(short i=0; i<7; i++) (loop over special_name) */
 

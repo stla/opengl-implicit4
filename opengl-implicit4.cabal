@@ -51,6 +51,7 @@ library
                      , CubeOctahedron
                      , Cyclide
                      , Metamorphose
+                     , BarthSextic
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
