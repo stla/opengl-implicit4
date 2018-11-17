@@ -91,11 +91,11 @@ display context = do
 resize :: Double -> Size -> IO ()
 resize zoom s@(Size w h) = do
   viewport $= (Position 0 0, s)
-  -- matrixMode $= Projection
+  matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
   lookAt (Vertex3 0 0 (-6+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
-  -- matrixMode $= Color
+  matrixMode $= Modelview 0
   where
     w' = realToFrac w
     h' = realToFrac h
@@ -150,7 +150,7 @@ main = do
   -- lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
   position (Light 0) $= Vertex4 500 500 (-1000) 1
-  ambient (Light 0) $= black
+  --ambient (Light 0) $= black
   diffuse (Light 0) $= white
   specular (Light 0) $= white
   -- attenuation (Light 0) $= (0.5,0.5,0.5)
@@ -185,7 +185,7 @@ main = do
   -- ambient (Light 6) $= black
   -- diffuse (Light 6) $= white
   -- specular (Light 6) $= white
-  -- lightModelAmbient $= black
+  lightModelAmbient $= Color4 0.35 0.35 0.35 1
   depthMask $= Enabled
   depthFunc $= Just Lequal
   shadeModel $= Smooth
