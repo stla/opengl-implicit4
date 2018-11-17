@@ -22,9 +22,9 @@ fromTriangle ((x1,y1,z1),(x2,y2,z2),(x3,y3,z3)) = (triangle, n)
   n = triangleNormal triangle
 
 fromTriangle' :: Gradient -> Triangle -> NNNTriangle
-fromTriangle' gradient ((x1,y1,z1),(x2,y2,z2),(x3,y3,z3)) = 
+fromTriangle' gradient ((x1,y1,z1),(x2,y2,z2),(x3,y3,z3)) =
   (triangle, (negateNormal n1, negateNormal n2, negateNormal n3))
-  where 
+  where
     x1' = realToFrac x1
     y1' = realToFrac y1
     z1' = realToFrac z1
@@ -41,5 +41,3 @@ fromTriangle' gradient ((x1,y1,z1),(x2,y2,z2),(x3,y3,z3)) =
     n2 = normalize $ Normal3 (realToFrac n2x) (realToFrac n2y) (realToFrac n2z)
     (n3x, n3y, n3z) = gradient (x3,y3,z3)
     n3 = normalize $ Normal3 (realToFrac n3x) (realToFrac n3y) (realToFrac n3z)
-
-  

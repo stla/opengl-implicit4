@@ -57,3 +57,7 @@ Dupin cyclide:
 Metamorphose:
 
 ![gfycat](https://thumbs.gfycat.com/SkeletalDismalAlbino-size_restricted.gif)
+
+Barth sextic:
+
+![Imgur](https://i.imgur.com/jeX4zeD.png)

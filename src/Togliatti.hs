@@ -1,4 +1,4 @@
-module BarthSextic
+module Togliatti
   ( main )
   where
 import           Data.IORef
@@ -13,7 +13,7 @@ data Context = Context
     , contextRot2      :: IORef GLfloat
     , contextRot3      :: IORef GLfloat
     , contextZoom      :: IORef Double
-    , contextTriangles :: IORef [NNNTriangle]
+    , contextTriangles :: IORef [NTriangle]
     }
 
 fuchsia :: Color4 GLfloat
@@ -22,43 +22,46 @@ discord :: Color4 GLfloat
 discord = Color4 0.21 0.22 0.25 1
 
 f :: XYZ -> Double
-f (x,y,z) = if x2+y2+z2<3
-  then 4*(phi2*x2-y2)*(phi2*y2-z2)*(phi2*z2-x2) - (1+2*phi)*(x2+y2+z2-1)*(x2+y2+z2-1)
+f (x,y,z) = if x2+y2+z2<24
+  then 64*(x-w)*
+       (sqr x2 -4*x2*x*w-10*x2*y2-4*x2*w2+16*x*w2*w-20*x*y2*w+5*sqr y2+16*sqr w2-20*y2*w2) -
+       5*sqrt(5-sqrt 5)*(2*z-sqrt(5-sqrt 5)*w)*sqr(4*(x2+y2-z2)+(1+3*sqrt 5)*w2)
   else 0/0
   where
+  w = 1
+  w2 = w*w
   x2 = x*x
   y2 = y*y
   z2 = z*z
-  phi = (1+sqrt 5)/2
-  phi2 = phi*phi
+  sqr u = u*u
 
-gradient :: XYZ -> XYZ
-gradient (x,y,z) =
-    (
-        8*x*phi2*(z2*phi2-x2)*(y2*phi2-z2) - 8*x*(x2*phi2-y2)*(y2*phi2-z2) -
-        4*x*(2*phi+1)*(x2+y2+z2-1),
-        8*y*phi2*(x2*phi2-y2)*(z2*phi2-x2) - 8*y*(z2*phi2-x2)*(y2*phi2-z2) -
-        4*y*(2*phi+1)*(x2+y2+z2-1),
-        8*z*phi2*(x2*phi2-y2)*(y2*phi2-z2) - 8*z*(x2*phi2-y2)*(z2*phi2-x2) -
-        4*z*(2*phi+1)*(x2+y2+z2-1)
-    )
-    where
-        x2 = x*x
-        y2 = y*y
-        z2 = z*z
-        phi = (1+sqrt 5)/2
-        phi2 = phi*phi
+-- gradient :: XYZ -> XYZ
+-- gradient (x,y,z) =
+--     (
+--         8*x*phi2*(z2*phi2-x2)*(y2*phi2-z2) - 8*x*(x2*phi2-y2)*(y2*phi2-z2) -
+--         4*x*(2*phi+1)*(x2+y2+z2-1),
+--         8*y*phi2*(x2*phi2-y2)*(z2*phi2-x2) - 8*y*(z2*phi2-x2)*(y2*phi2-z2) -
+--         4*y*(2*phi+1)*(x2+y2+z2-1),
+--         8*z*phi2*(x2*phi2-y2)*(y2*phi2-z2) - 8*z*(x2*phi2-y2)*(z2*phi2-x2) -
+--         4*z*(2*phi+1)*(x2+y2+z2-1)
+--     )
+--     where
+--         x2 = x*x
+--         y2 = y*y
+--         z2 = z*z
+--         phi = (1+sqrt 5)/2
+--         phi2 = phi*phi
 
 voxel :: Voxel
-voxel = makeVoxel f ((-1.8,1.8),(-1.8,1.8),(-1.8,1.8)) (150, 150, 150)
+voxel = makeVoxel f ((-5,5),(-5,5),(-4,4)) (150, 150, 150)
 
 voxmax :: Double
 voxmax = voxelMax voxel
 
-trianglesBarth :: Double -> IO [NNNTriangle]
-trianglesBarth level = do
-  triangles <- computeContour3d'' voxel (Just voxmax) level True
-  return $ map (fromTriangle' gradient) triangles
+trianglesTogli :: Double -> IO [NTriangle]
+trianglesTogli level = do
+  triangles <- computeContour3d'' voxel (Just voxmax) level False
+  return $ map fromTriangle triangles
 
 display :: Context -> DisplayCallback
 display context = do
@@ -79,13 +82,11 @@ display context = do
     mapM_ drawTriangle triangles
   swapBuffers
   where
-    drawTriangle ((v1,v2,v3), (n1,n2,n3)) = do
+    drawTriangle ((v1,v2,v3), n) = do
       materialDiffuse Front $= fuchsia
-      normal n1
+      normal n
       vertex v1
-      normal n3
       vertex v3
-      normal n2
       vertex v2
 
 resize :: Double -> Size -> IO ()
@@ -94,7 +95,7 @@ resize zoom s@(Size w h) = do
   -- matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  lookAt (Vertex3 0 0 (-6+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 0 (-13+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
   -- matrixMode $= Color
   where
     w' = realToFrac w
@@ -102,7 +103,7 @@ resize zoom s@(Size w h) = do
 
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef Double -- isolevel
-         -> IORef [NNNTriangle]
+         -> IORef [NTriangle]
          -> IORef Double -- zoom
          -> KeyboardCallback
 keyboard rot1 rot2 rot3 l trianglesRef zoom c _ = do
@@ -118,13 +119,13 @@ keyboard rot1 rot2 rot3 l trianglesRef zoom c _ = do
     'h' -> do
              l $~! (+ 0.1)
              l' <- get l
-             triangles <- trianglesBarth l'
+             triangles <- trianglesTogli l'
              writeIORef trianglesRef triangles
     'n' -> do
              l $~! (\x -> if x>=0.1 then x-0.1 else x)
              l' <- get l
              putStrLn ("l': " ++ show l')
-             triangles <- trianglesBarth l'
+             triangles <- trianglesTogli l'
              writeIORef trianglesRef triangles
     'q' -> leaveMainLoop
     _   -> return ()
@@ -134,64 +135,31 @@ keyboard rot1 rot2 rot3 l trianglesRef zoom c _ = do
 main :: IO ()
 main = do
   _ <- getArgsAndInitialize
-  _ <- createWindow "Barth Sextic"
+  _ <- createWindow "Togliatti surface"
   windowSize $= Size 500 500
-  initialDisplayMode $= [RGBMode, DoubleBuffered, WithDepthBuffer]
+  initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
   -- colorMask $= Color4 Enabled Disabled Enabled Enabled
   clearColor $= discord
   clientState ColorArray $= Disabled
   --colorMaterial $= Just (Front, Emission)
   materialAmbient Front $= black
-  materialDiffuse Front $= white
+  -- materialDiffuse Front $= white
   materialEmission Front $= Color4 0 0 0 0
-  materialSpecular Front $= white
+  materialSpecular Front $= Color4 0.91 0.91 0.91 1
   materialShininess Front $= 50
   lighting $= Enabled
   -- lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
-  position (Light 0) $= Vertex4 500 500 (-1000) 1
+  position (Light 0) $= Vertex4 0 0 (-1000) 1
   ambient (Light 0) $= black
   diffuse (Light 0) $= white
   specular (Light 0) $= white
-  -- attenuation (Light 0) $= (0.5,0.5,0.5)
---  spotDirection (Light 0) $= Normal3 0 1 0
-  -- light (Light 1) $= Enabled
-  -- position (Light 1) $= Vertex4 0 0 (1000) 1
-  -- ambient (Light 1) $= white
-  -- diffuse (Light 1) $= white
-  -- specular (Light 1) $= white
-  -- light (Light 2) $= Enabled
-  -- position (Light 2) $= Vertex4 0 (-1000) 0 1
-  -- ambient (Light 2) $= white
-  -- diffuse (Light 2) $= white
-  -- specular (Light 2) $= white
-  -- light (Light 3) $= Enabled
-  -- position (Light 3) $= Vertex4 0 (1000) 0 1
-  -- ambient (Light 3) $= white
-  -- diffuse (Light 3) $= white
-  -- specular (Light 3) $= white
-  -- light (Light 4) $= Enabled
-  -- position (Light 4) $= Vertex4 (-1000) 0 0 1
-  -- ambient (Light 4) $= white
-  -- diffuse (Light 4) $= white
-  -- specular (Light 4) $= white
-  -- light (Light 5) $= Enabled
-  -- position (Light 5) $= Vertex4 1000 0 0 1
-  -- ambient (Light 5) $= white
-  -- diffuse (Light 5) $= white
-  -- specular (Light 5) $= white
-  -- light (Light 6) $= Enabled
-  -- position (Light 6) $= Vertex4 (0) (0) (0) 1
-  -- ambient (Light 6) $= black
-  -- diffuse (Light 6) $= white
-  -- specular (Light 6) $= white
-  -- lightModelAmbient $= black
   depthMask $= Enabled
   depthFunc $= Just Lequal
   shadeModel $= Smooth
-  fog $= Disabled
-  -- fogColor $= Color4 1 0 1 1
-  -- fogCoordSrc $= FragmentDepth
+  fog $= Enabled
+  fogColor $= Color4 0.9 0 0.9 1
+  fogCoordSrc $= FogCoord
   -- fogDistanceMode $= EyePlaneAbsolute
   polygonMode $= (Fill, Fill)
   polygonSmooth $= Enabled
@@ -202,7 +170,7 @@ main = do
   rot3 <- newIORef 0.0
   level <- newIORef 0.0
   zoom <- newIORef 0.0
-  triangles <- trianglesBarth 0.0
+  triangles <- trianglesTogli 0.0
   trianglesRef <- newIORef triangles
   displayCallback $= display Context {contextRot1 = rot1,
                                       contextRot2 = rot2,
@@ -212,7 +180,7 @@ main = do
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 level trianglesRef zoom)
   idleCallback $= Nothing
-  putStrLn "*** Barth sextic ***\n\
+  putStrLn "*** Togliatti surface ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\

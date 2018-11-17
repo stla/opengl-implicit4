@@ -31,19 +31,19 @@ fOrthocircle a b (x,y,z) =
     yz2 = y2+z2-1
     zx2 = z2+x2-1
 
--- ((x^2+y^2-1)^2 + z^2) * ((y^2+z^2-1)^2 + x^2) * ((x^2+z^2-1)^2 + y^2) - a^2*(1+b*(x^2+y^2+z^2))  
+-- ((x^2+y^2-1)^2 + z^2) * ((y^2+z^2-1)^2 + x^2) * ((x^2+z^2-1)^2 + y^2) - a^2*(1+b*(x^2+y^2+z^2))
 
 gradient :: Double -> Double -> XYZ -> XYZ
-gradient a b (x,y,z) = 
+gradient a b (x,y,z) =
     (
-       -2*a*a*b*x + 2*x*(xy2*xy2+z2)*(zx2*zx2+y2) + 
-       4*x*zx2*(xy2*xy2+z2)*(yz2*yz2+x2) + 
+       -2*a*a*b*x + 2*x*(xy2*xy2+z2)*(zx2*zx2+y2) +
+       4*x*zx2*(xy2*xy2+z2)*(yz2*yz2+x2) +
        4*x*xy2*(zx2*zx2+y2)*(yz2*yz2+x2),
-       -2*a*a*b*y + 2*y*(xy2*xy2+z2)*(yz2*yz2+x2) + 
-       4*y*yz2*(xy2*xy2+z2)*(zx2*zx2+y2) + 
+       -2*a*a*b*y + 2*y*(xy2*xy2+z2)*(yz2*yz2+x2) +
+       4*y*yz2*(xy2*xy2+z2)*(zx2*zx2+y2) +
        4*y*xy2*(zx2*zx2+y2)*(yz2*yz2+x2),
-       -2*a*a*b*z + 2*z*(zx2*zx2+y2)*(yz2*yz2+x2) + 
-       4*z*yz2*(xy2*xy2+z2)*(zx2*zx2+y2) + 
+       -2*a*a*b*z + 2*z*(zx2*zx2+y2)*(yz2*yz2+x2) +
+       4*z*yz2*(xy2*xy2+z2)*(zx2*zx2+y2) +
        4*z*zx2*(xy2*xy2+z2)*(yz2*yz2+x2)
     )
     where
@@ -53,7 +53,7 @@ gradient a b (x,y,z) =
         xy2 = x2+y2-1
         yz2 = y2+z2-1
         zx2 = z2+x2-1
-    
+
 voxel :: Double -> Double -> Voxel
 voxel a b = makeVoxel (fOrthocircle a b)
                       ((-1.3,1.3),(-1.3,1.3),(-1.3,1.3))
@@ -61,7 +61,7 @@ voxel a b = makeVoxel (fOrthocircle a b)
 
 trianglesOrthocircle :: Double -> Double -> Double -> IO [NNNTriangle]
 trianglesOrthocircle a b l = do
-  triangles <- computeContour3d'' (voxel a b) Nothing l False
+  triangles <- computeContour3d'' (voxel a b) Nothing l True
   return $ map (fromTriangle' (gradient a b)) triangles
 
 display :: Context -> DisplayCallback

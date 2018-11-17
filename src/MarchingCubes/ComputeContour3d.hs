@@ -50,7 +50,7 @@ rescale :: ((Double,Double),(Double,Double),(Double,Double)) -> (Int,Int,Int)
 rescale ((xm,xM),(ym,yM),(zm,zM)) (nx,ny,nz) ((x1,y1,z1),(x2,y2,z2),(x3,y3,z3)) =
   ((sx x1, sy y1, sz z1), (sx x2, sy y2, sz z2), (sx x3, sy y3, sz z3))
   where
-  s a b n u = a + (b-a) * u / fromIntegral (n-1)
+  s a b n u = a + (b-a) * u / fromIntegral (n+1)
   sx = s xm xM nx
   sy = s ym yM ny
   sz = s zm zM nz
@@ -69,6 +69,8 @@ computeContour3d' voxel voxmax level summary = do
         yM = maximum (tpoints !! 1)
         zm = minimum (tpoints !! 2)
         zM = maximum (tpoints !! 2)
+    putStrLn "Prebounds:"
+    print ((xm,ym,zm),(xM,yM,zM))
     putStrLn "Bounds:"
     print $ (fst3 &&& snd3) $
       rescale xyzbounds nxyz ((xm,ym,zm),(xM,yM,zM),(0/0,0/0,0/0))

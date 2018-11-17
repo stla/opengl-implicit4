@@ -52,6 +52,7 @@ library
                      , Cyclide
                      , Metamorphose
                      , BarthSextic
+                     , Togliatti
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT

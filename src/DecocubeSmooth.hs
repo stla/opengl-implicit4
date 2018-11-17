@@ -69,15 +69,13 @@ gradient a (x,y,z) =
         y2z2a2 = y2+z2-a2
         z2x2a2 = z2+x2-a2
 
--- ((x^2+y^2-a^2)^2 + (z^2-1)^2)((y^2+z^2-a^2)^2 + (x^2-1)^2)((z^2+x^2-a^2)^2 + (y^2-1)^2)
-
 voxel :: Double -> Voxel
 voxel a = makeVoxel (fDecocube a) ((-1.3,1.3),(-1.3,1.3),(-1.3,1.3))
                     (130, 130, 130)
 
 trianglesDecocube :: Double -> Double -> IO [NNNTriangle]
 trianglesDecocube a l = do
-  triangles <- computeContour3d'' (voxel a) Nothing l False
+  triangles <- computeContour3d'' (voxel a) Nothing l True
   return $ map (fromTriangle' (gradient a)) triangles
 
 display :: Context -> IORef GLfloat -> DisplayCallback

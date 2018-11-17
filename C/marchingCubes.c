@@ -140,7 +140,7 @@ size_t** GetBasic1(unsigned* R, size_t nR, size_t** vivjvk){
   size_t** cubeco = matricialSum(k1, k2, 8*nR+1, 3);
   freeMatrix_s(indexPtr,8);
   freeMatrix_s(cube1,nR);
-  freeMatrix_s(k1,24);
+  freeMatrix_s(k1,8*nR+1);
   freeMatrix_s(k2,8*nR+1);
   return cubeco;
 }
@@ -400,9 +400,11 @@ double** computeContour3d(
         }
 
         for(short c=0; c<7; c++){
+          printf("c: %hi\n", c);
           unsigned nR3;
           unsigned* R3 = whichEqual(tcase, special_name[c], nrow, &nR3);
-          if(nR3 > 0){
+          printf("nR3: %u\n", nR3);
+          if(nR3 > 0){ // crash si nR3=2
             size_t** cubeco3 = GetBasic1(R3, nR3, vivjvk);
             double* values3 = GetBasic2prime(voxel, level, cubeco3, nR3);
             size_t* p13 = malloc(nR3 * sizeof(size_t));
@@ -418,8 +420,7 @@ double** computeContour3d(
             unsigned outlength3; // = nR3 ?
             unsigned* index3;
             int* faces3 = unlist(Faces, FacesSizes, cases3, nR3, &outlength3);
-            printf("outlength3: %u\n", outlength3);
-            printf("nR3: %u\n", nR3); // yes, outlength3 = nR3 ! ? check
+            printf("outlength3: %u\n", outlength3); // yes, outlength3 = nR3 ! ? check
             if(c == 0){
               index3 = FacesNo7(faces3, p13, values3, nR3, 1);
             }else if(c == 1){
