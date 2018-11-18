@@ -61,3 +61,7 @@ Metamorphose:
 Barth sextic:
 
 ![Imgur](https://i.imgur.com/jeX4zeD.png)
+
+Togliatti surface:
+
+![Imgur](https://i.imgur.com/CqZeLoV.png)

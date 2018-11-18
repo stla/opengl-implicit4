@@ -35,23 +35,6 @@ f (x,y,z) = if x2+y2+z2<24
   z2 = z*z
   sqr u = u*u
 
--- gradient :: XYZ -> XYZ
--- gradient (x,y,z) =
---     (
---         8*x*phi2*(z2*phi2-x2)*(y2*phi2-z2) - 8*x*(x2*phi2-y2)*(y2*phi2-z2) -
---         4*x*(2*phi+1)*(x2+y2+z2-1),
---         8*y*phi2*(x2*phi2-y2)*(z2*phi2-x2) - 8*y*(z2*phi2-x2)*(y2*phi2-z2) -
---         4*y*(2*phi+1)*(x2+y2+z2-1),
---         8*z*phi2*(x2*phi2-y2)*(y2*phi2-z2) - 8*z*(x2*phi2-y2)*(z2*phi2-x2) -
---         4*z*(2*phi+1)*(x2+y2+z2-1)
---     )
---     where
---         x2 = x*x
---         y2 = y*y
---         z2 = z*z
---         phi = (1+sqrt 5)/2
---         phi2 = phi*phi
-
 voxel :: Voxel
 voxel = makeVoxel f ((-5,5),(-5,5),(-4,4)) (150, 150, 150)
 
@@ -83,20 +66,20 @@ display context = do
   swapBuffers
   where
     drawTriangle ((v1,v2,v3), n) = do
-      materialDiffuse Front $= fuchsia
+      materialDiffuse FrontAndBack $= fuchsia
       normal n
       vertex v1
-      vertex v3
       vertex v2
+      vertex v3
 
 resize :: Double -> Size -> IO ()
 resize zoom s@(Size w h) = do
   viewport $= (Position 0 0, s)
-  -- matrixMode $= Projection
+  matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
   lookAt (Vertex3 0 0 (-13+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
-  -- matrixMode $= Color
+  matrixMode $= Modelview 0
   where
     w' = realToFrac w
     h' = realToFrac h
@@ -140,31 +123,33 @@ main = do
   initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
   -- colorMask $= Color4 Enabled Disabled Enabled Enabled
   clearColor $= discord
-  clientState ColorArray $= Disabled
+  -- clientState ColorArray $= Disabled
   --colorMaterial $= Just (Front, Emission)
-  materialAmbient Front $= black
-  -- materialDiffuse Front $= white
-  materialEmission Front $= Color4 0 0 0 0
-  materialSpecular Front $= Color4 0.91 0.91 0.91 1
-  materialShininess Front $= 50
+  materialAmbient FrontAndBack $= black
+  materialDiffuse FrontAndBack $= white
+  materialEmission FrontAndBack $= Color4 0 0 0 0
+  materialSpecular FrontAndBack $= white
+  materialShininess FrontAndBack $= 50
   lighting $= Enabled
-  -- lightModelTwoSide $= Enabled
+  lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
   position (Light 0) $= Vertex4 0 0 (-1000) 1
-  ambient (Light 0) $= black
   diffuse (Light 0) $= white
   specular (Light 0) $= white
-  depthMask $= Enabled
-  depthFunc $= Just Lequal
+  lightModelAmbient $= Color4 0.35 0.35 0.35 1
+  -- depthMask $= Enabled
+  depthFunc $= Just Less
   shadeModel $= Smooth
-  fog $= Enabled
-  fogColor $= Color4 0.9 0 0.9 1
-  fogCoordSrc $= FogCoord
+  -- fog $= Disabled
+  -- fogColor $= Color4 0.1 0 0.1 1
+  -- fogCoordSrc $= FogCoord
   -- fogDistanceMode $= EyePlaneAbsolute
-  polygonMode $= (Fill, Fill)
+  -- polygonMode $= (Fill, Fill)
   polygonSmooth $= Enabled
-  cullFace $= Just Front
+  cullFace $= Nothing
   rescaleNormal $= Enabled
+  -- shader <- createShader FragmentShader
+  -- _ <- compileShader shader
   rot1 <- newIORef 0.0
   rot2 <- newIORef 0.0
   rot3 <- newIORef 0.0
