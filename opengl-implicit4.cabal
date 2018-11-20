@@ -53,6 +53,8 @@ library
                      , Metamorphose
                      , BarthSextic
                      , Togliatti
+                     , TogliattiSmooth
+                     , MultiPol
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
