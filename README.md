@@ -65,3 +65,7 @@ Barth sextic:
 Togliatti surface:
 
 ![Imgur](https://i.imgur.com/CqZeLoV.png)
+
+Enzensberger star:
+
+![gfycat](https://thumbs.gfycat.com/IncompatibleUnhealthyKob-size_restricted.gif)
