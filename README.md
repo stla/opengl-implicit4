@@ -69,3 +69,7 @@ Togliatti surface:
 Enzensberger star:
 
 ![gfycat](https://thumbs.gfycat.com/IncompatibleUnhealthyKob-size_restricted.gif)
+
+Mandelbulb:
+
+![Imgur](https://i.imgur.com/kMwd0DW.png)

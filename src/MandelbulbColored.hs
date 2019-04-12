@@ -38,7 +38,7 @@ fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
 
 voxel :: Voxel
 voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
-                  (50, 50, 50)
+                  (128, 128, 128)
 
 trianglesMandelbulb :: IO ([Triangle], Double)
 trianglesMandelbulb = computeContour3d''' voxel Nothing 1 True
@@ -82,7 +82,7 @@ resize zoom s@(Size w h) = do
   matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  lookAt (Vertex3 0 0 (-3+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 (-3+zoom) 0) (Vertex3 0 0 0) (Vector3 0 0 1)
   matrixMode $= Modelview 0
   where
     w' = realToFrac w
@@ -115,9 +115,8 @@ main = do
   clearColor $= white
   materialAmbient Front $= black
   lighting $= Enabled
-  -- lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
-  position (Light 0) $= Vertex4 0 0 (-100) 1
+  position (Light 0) $= Vertex4 0 (-100) 0 1
   ambient (Light 0) $= black
   diffuse (Light 0) $= white
   specular (Light 0) $= white
