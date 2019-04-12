@@ -1,11 +1,13 @@
-module Mandelbulb
+module MandelbulbColored
   ( main )
   where
 import           Data.IORef
-import           Graphics.Rendering.OpenGL.GL
-import           Graphics.UI.GLUT
+import           Graphics.Rendering.OpenGL.GL hiding (color)
+import           Graphics.UI.GLUT       hiding (Triangle, color)
 import           MarchingCubes
+import           MarchingCubes.Utils.Triangles (triangleNorm2Center)
 import           Utils.OpenGL
+import           Utils.Palettes
 
 data Context = Context
     {
@@ -14,10 +16,8 @@ data Context = Context
     , contextRot3      :: IORef GLfloat
     , contextZoom      :: IORef Double
     , contextTriangles :: IORef [NTriangle]
+    , contextColors    :: IORef [Color4 GLfloat]
     }
-
-red :: Color4 GLfloat
-red = Color4 1 0 0 1
 
 fMandelbulb :: XYZ -> Double
 fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
@@ -40,10 +40,16 @@ voxel :: Voxel
 voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
                   (50, 50, 50)
 
-trianglesMandelbulb :: IO [NTriangle]
-trianglesMandelbulb = do
-  triangles <- computeContour3d'' voxel Nothing 1 True
-  return $ map fromTriangle triangles
+trianglesMandelbulb :: IO ([Triangle], Double)
+trianglesMandelbulb = computeContour3d''' voxel Nothing 1 True
+
+funColor :: Int -> Double -> Triangle -> Color4 GLfloat
+funColor colormap dmax triangle = palette !! j
+  where
+    d = triangleNorm2Center triangle
+    j = floor (d*255/dmax)
+    palettes = ["inferno", "magma", "plasma", "viridis", "cviridis"]
+    palette = colorRamp' (palettes !! colormap) 256
 
 display :: Context -> DisplayCallback
 display context = do
@@ -52,6 +58,7 @@ display context = do
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
   triangles <- get (contextTriangles context)
+  colors <- get (contextColors context)
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -59,11 +66,11 @@ display context = do
   rotate r1 $ Vector3 1 0 0
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
-  renderPrimitive Triangles $ mapM_ drawTriangle triangles
+  renderPrimitive Triangles $ mapM_ drawTriangle (zip triangles colors)
   swapBuffers
   where
-    drawTriangle ((v1,v2,v3), norm) = do
-      materialDiffuse Front $= red
+    drawTriangle (((v1,v2,v3), norm), color) = do
+      materialDiffuse Front $= color
       normal $ negateNormal norm
       vertex v1
       vertex v2
@@ -122,12 +129,14 @@ main = do
   rot3 <- newIORef 0.0
   zoom <- newIORef 0.0
   triangles <- trianglesMandelbulb
-  trianglesRef <- newIORef triangles
+  trianglesRef <- newIORef (map fromTriangle (fst triangles))
+  colorsRef <- newIORef (map (funColor 0 (snd triangles)) (fst triangles))
   displayCallback $= display Context {contextRot1 = rot1,
                                       contextRot2 = rot2,
                                       contextRot3 = rot3,
                                       contextZoom = zoom,
-                                      contextTriangles = trianglesRef}
+                                      contextTriangles = trianglesRef,
+                                      contextColors = colorsRef}
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
   idleCallback $= Nothing
