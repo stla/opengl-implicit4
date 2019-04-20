@@ -20,7 +20,7 @@ fromV3 :: Floating a => V3 a -> (a,a,a)
 fromV3 (V3 x y z) = (x, y, z)
 
 normal :: Floating a => (a,a,a) -> (a,a,a) -> (a,a,a) -> V3 a
-normal v1 v2 v3 = signorm $ cross (v2' ^-^ v1') (v3' ^-^ v1')
+normal v1 v2 v3 = signorm $ cross (v3' ^-^ v1') (v2' ^-^ v1')
   where
   v1' = toV3 v1
   v2' = toV3 v2

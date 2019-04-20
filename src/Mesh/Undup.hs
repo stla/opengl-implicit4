@@ -2,13 +2,13 @@ module Mesh.Undup
   (undupMesh)
   where
 import           Data.Maybe
-import           Data.Vector.Unboxed (Unbox, Vector, elemIndex, (!))
+import           Data.Vector.Unboxed (Unbox, Vector, elemIndex, (!), cons)
 import qualified Data.Vector.Unboxed as VU
 
 nub :: (Eq a, Unbox a) => Vector a -> Vector a
 nub v = if VU.null v
   then VU.empty
-  else let x = VU.head v in VU.cons x (nub (VU.filter (\y -> x/=y) (VU.tail v)))
+  else let x = VU.head v in cons x (nub (VU.filter (\y -> x/=y) (VU.tail v)))
 
 unique :: (Eq a, Unbox a) => Vector a -> (Vector a, Vector Int)
 unique vs = (vsnub, indices)

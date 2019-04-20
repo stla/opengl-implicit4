@@ -4,12 +4,13 @@ module MarchingCubes.ComputeContour3d2
 import           Control.Monad                  (when, (=<<))
 import           Data.List                      (transpose)
 import           Data.List.Split                (chunksOf)
-import           Data.Tuple.Extra               (snd3, thd3)
+import           Data.Tuple.Extra               (snd3, thd3, second)
 import           Data.Vector.Unboxed            (Vector, fromList)
 import qualified Data.Vector.Unboxed            as VU
 import           Foreign.Marshal.Array          (peekArray)
 import           MarchingCubes.ComputeContour3d (computeContour3d)
 import           MarchingCubes.Voxel
+import           Mesh.ConnectedComponents
 import           Mesh.Normals
 import           Mesh.Undup
 
@@ -24,9 +25,9 @@ rescale ((xm,xM),(ym,yM),(zm,zM)) (nx,ny,nz) (x,y,z) = (sx x, sy y, sz z)
   sy = s ym yM ny
   sz = s zm zM nz
 
-computeContour3d' :: Voxel -> Maybe Double -> Double -> Bool
+computeContour3d' :: Voxel -> Maybe Double -> Double -> Bool -> Bool
                   -> IO ((Vector XYZ, [[Int]]), [XYZ])
-computeContour3d' voxel voxmax level summary = do
+computeContour3d' voxel voxmax level isolate summary = do
   (ppCDouble, nrows) <- computeContour3d voxel voxmax level
   points <- mapM (peekArray 3) =<< peekArray nrows ppCDouble
   let xyzbounds = thd3 voxel
@@ -52,9 +53,20 @@ computeContour3d' voxel voxmax level summary = do
   putStrLn "length new points:"
   print $ VU.length $ fst mesh
   putStrLn "mesh unduped"
-  let nrmls = normals mesh
-  putStrLn "normals done"
-  return (mesh, nrmls)
+  if isolate
+    then do
+      let mesh' = second biggestComponent mesh
+      putStrLn "number of faces:"
+      print $ length (snd mesh')
+      let nrmls = normals mesh -- pb if normals mesh'
+      print $ length nrmls
+      putStrLn "normals done"
+      return (mesh', nrmls)
+    else do
+      let nrmls = normals mesh
+      print $ length nrmls
+      putStrLn "normals done"
+      return (mesh, nrmls)
 
 -- computeContour3d'' :: Voxel -> Maybe Double -> Double -> Bool -> IO [Triangle]
 -- computeContour3d'' voxel voxmax level summary = do
