@@ -2,7 +2,8 @@ module WonderTree2
   ( main )
   where
 import           Data.IORef
-import           Data.Vector.Unboxed          (Vector, (!))
+import           Data.Tuple.Extra             (second)
+import           Data.Vector.Unboxed          (Vector, (!), fromList)
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
 import           MarchingCubes2
@@ -34,11 +35,14 @@ fWonderTree (x,y,z) =
 
 voxel :: Voxel
 voxel = makeVoxel fWonderTree ((-1.9,1.3),(-1.9,1.3),(-1.9,1.3))
-                              (15, 15, 15)
+                              (50, 50, 50)
 
 wonderTree :: ((Vector XYZ, [[Int]]), [XYZ])
 {-# NOINLINE wonderTree #-}
 wonderTree = unsafePerformIO $ computeContour3d' voxel Nothing 0.0 True
+
+wonderTree' :: ((Vector XYZ, [[Int]]), Vector XYZ)
+wonderTree' = second fromList wonderTree
 
 display :: Context -> DisplayCallback
 display context = do
@@ -46,9 +50,9 @@ display context = do
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  let vertices = fst $ fst wonderTree
-      faces = snd $ fst wonderTree
-      normals = snd wonderTree
+  let vertices = fst $ fst wonderTree'
+      faces = snd $ fst wonderTree'
+      normals = snd wonderTree'
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -57,20 +61,19 @@ display context = do
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
   renderPrimitive Triangles $
-    mapM_ (drawTriangle vertices faces normals) [0 .. length faces - 1]
+    mapM_ (drawTriangle vertices normals) faces
   swapBuffers
   where
-    drawTriangle vs fs ns i = do
-      let face = fs !! i
-          j0 = face !! 0
+    drawTriangle vs ns face = do
+      let j0 = face !! 0
           j1 = face !! 1
           j2 = face !! 2
       materialDiffuse FrontAndBack $= navy
-      normal (toNormal $ ns !! j0)
+      normal (toNormal $ ns ! j0)
       vertex (toVertex $ vs ! j0)
-      normal (toNormal $ ns !! j1)
+      normal (toNormal $ ns ! j1)
       vertex (toVertex $ vs ! j1)
-      normal (toNormal $ ns !! j2)
+      normal (toNormal $ ns ! j2)
       vertex (toVertex $ vs ! j2)
       where
         toNormal (x,y,z) = Normal3 x y z
