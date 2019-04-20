@@ -1,5 +1,5 @@
 module MarchingCubes.ComputeContour3d2
-  (computeContour3d')
+  (computeContour3d', computeContour3d'')
   where
 import           Control.Monad                  (when, (=<<))
 import           Data.List                      (transpose)
@@ -50,6 +50,49 @@ computeContour3d' voxel voxmax level isolate summary = do
       mesh = undupMesh (points'', faces)
   putStrLn "length points:"
   print $ VU.length points'
+  putStrLn "length new points:"
+  print $ VU.length $ fst mesh
+  putStrLn "mesh unduped"
+  if isolate
+    then do
+      let mesh' = second biggestComponent mesh
+      putStrLn "number of faces:"
+      print $ length (snd mesh')
+      let nrmls = normals mesh -- pb if normals mesh'
+      print $ length nrmls
+      putStrLn "normals done"
+      return (mesh', nrmls)
+    else do
+      let nrmls = normals mesh
+      print $ length nrmls
+      putStrLn "normals done"
+      return (mesh, nrmls)
+
+computeContour3d'' :: Voxel -> Maybe Double -> Double -> Bool -> Bool
+                  -> IO ((Vector XYZ, [[Int]]), [XYZ])
+computeContour3d'' voxel voxmax level isolate summary = do
+  (ppCDouble, nrows) <- computeContour3d voxel voxmax level
+  points <- mapM (peekArray 3) =<< peekArray nrows ppCDouble
+  let xyzbounds = thd3 voxel
+      nxyz = snd3 voxel
+  when summary $ do
+    let tpoints = transpose (map (map realToFrac) points)
+        xm = minimum (tpoints !! 0)
+        xM = maximum (tpoints !! 0)
+        ym = minimum (tpoints !! 1)
+        yM = maximum (tpoints !! 1)
+        zm = minimum (tpoints !! 2)
+        zM = maximum (tpoints !! 2)
+    putStrLn "Prebounds:"
+    print ((xm,ym,zm),(xM,yM,zM))
+    putStrLn "Bounds:"
+    print (rescale xyzbounds nxyz (xm,ym,zm), rescale xyzbounds nxyz (xM,yM,zM))
+  let points' = map ((\p -> (p!!0, p!!1, p!!2)) . map realToFrac) points
+      points'' = map (rescale xyzbounds nxyz) points'
+      faces = chunksOf 3 [0 .. length points'' - 1]
+      mesh = undupMesh' (points'', faces)
+  putStrLn "length points:"
+  print $ length points'
   putStrLn "length new points:"
   print $ VU.length $ fst mesh
   putStrLn "mesh unduped"

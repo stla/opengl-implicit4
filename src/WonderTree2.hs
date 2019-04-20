@@ -35,11 +35,11 @@ fWonderTree (x,y,z) =
 
 voxel :: Voxel
 voxel = makeVoxel fWonderTree ((-1.9,1.3),(-1.9,1.3),(-1.9,1.3))
-                              (30, 30, 30)
+                              (50, 50, 50)
 
 wonderTree :: ((Vector XYZ, [[Int]]), [XYZ])
 {-# NOINLINE wonderTree #-}
-wonderTree = unsafePerformIO $ computeContour3d' voxel Nothing 0.0 False True
+wonderTree = unsafePerformIO $ computeContour3d'' voxel Nothing 0.0 False True
 
 wonderTree' :: ((Vector XYZ, [[Int]]), Vector XYZ)
 wonderTree' = second fromList wonderTree
