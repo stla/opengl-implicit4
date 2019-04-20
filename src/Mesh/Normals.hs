@@ -1,7 +1,7 @@
 module Mesh.Normals
   (normals)
   where
-import           Data.IntMap.Strict  (IntMap, unionWith)
+import           Data.IntMap.Strict  (IntMap, unionWith, elems)
 import qualified Data.IntMap.Strict  as M
 import           Data.List           (foldl')
 import           Data.Vector.Unboxed (Unbox, Vector, (!))
@@ -16,6 +16,9 @@ import           Linear              (V3 (..), cross, signorm, (^+^), (^-^))
 toV3 :: Floating a => (a,a,a) -> V3 a
 toV3 (x,y,z) = V3 x y z
 
+fromV3 :: Floating a => V3 a -> (a,a,a)
+fromV3 (V3 x y z) = (x, y, z)
+
 normal :: Floating a => (a,a,a) -> (a,a,a) -> (a,a,a) -> V3 a
 normal v1 v2 v3 = signorm $ cross (v2' ^-^ v1') (v3' ^-^ v1')
   where
@@ -29,6 +32,9 @@ faceNormals vs face = M.fromList nrmls
   nrml = normal (vs ! (face !! 0)) (vs ! (face !! 1)) (vs ! (face !! 2))
   nrmls = map (\i -> (i, nrml)) face
 
-normals :: (Floating a, Unbox a) => Vector (a,a,a) -> [[Int]] -> IntMap (V3 a)
-normals vs faces =
+normalsV3 :: (Floating a, Unbox a) => (Vector (a,a,a), [[Int]]) -> IntMap (V3 a)
+normalsV3 (vs, faces) =
   M.map signorm (foldl' (unionWith (^+^)) M.empty (map (faceNormals vs) faces))
+
+normals :: (Floating a, Unbox a) => (Vector (a,a,a), [[Int]]) -> [(a,a,a)]
+normals mesh = map fromV3 (elems $ normalsV3 mesh)
