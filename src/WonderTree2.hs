@@ -2,21 +2,28 @@ module WonderTree2
   ( main )
   where
 import           Data.IORef
+import           Data.Vector.Unboxed          (Vector, (!))
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
 import           MarchingCubes2
 import           System.IO.Unsafe
-import Data.Vector.Unboxed (Vector)
+
+type XYZ = (Double, Double, Double)
+
+white,black,navy :: Color4 GLfloat
+white = Color4 1 1 1 1
+black = Color4 0 0 0 1
+navy = Color4 0 0 0.5 1
 
 data Context = Context
     {
-      contextRot1      :: IORef GLfloat
-    , contextRot2      :: IORef GLfloat
-    , contextRot3      :: IORef GLfloat
-    , contextZoom      :: IORef Double
+      contextRot1 :: IORef GLfloat
+    , contextRot2 :: IORef GLfloat
+    , contextRot3 :: IORef GLfloat
+    , contextZoom :: IORef Double
     }
 
-fWonderTree :: (Double,Double,Double) -> Double
+fWonderTree :: XYZ -> Double
 fWonderTree (x,y,z) =
   cos(4*x/(xyz+0.0001)) + sin(4*y/(xyz+0.0001)) +
   cos(4*y/(xyz+0.0001)) + sin(4*z/(xyz+0.0001)) +
@@ -27,9 +34,9 @@ fWonderTree (x,y,z) =
 
 voxel :: Voxel
 voxel = makeVoxel fWonderTree ((-1.9,1.3),(-1.9,1.3),(-1.9,1.3))
-                              (50, 50, 50)
+                              (15, 15, 15)
 
-wonderTree :: (Vector (Double, Double, Double), [[Int]])
+wonderTree :: ((Vector XYZ, [[Int]]), [XYZ])
 {-# NOINLINE wonderTree #-}
 wonderTree = unsafePerformIO $ computeContour3d' voxel Nothing 0.0 True
 
@@ -39,8 +46,9 @@ display context = do
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  let triangles = fst trianglesWonderTree
-  colors <- get (contextColors context)
+  let vertices = fst $ fst wonderTree
+      faces = snd $ fst wonderTree
+      normals = snd wonderTree
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -48,16 +56,25 @@ display context = do
   rotate r1 $ Vector3 1 0 0
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
-  renderPrimitive Triangles $ mapM_ drawTriangle (zip triangles colors)
+  renderPrimitive Triangles $
+    mapM_ (drawTriangle vertices faces normals) [0 .. length faces - 1]
   swapBuffers
   where
-    drawTriangle (triangle, color) = do
-      let ((v1,v2,v3), norm) = fromTriangle triangle
-      materialDiffuse FrontAndBack $= color
-      normal norm
-      vertex v1
-      vertex v2
-      vertex v3
+    drawTriangle vs fs ns i = do
+      let face = fs !! i
+          j0 = face !! 0
+          j1 = face !! 1
+          j2 = face !! 2
+      materialDiffuse FrontAndBack $= navy
+      normal (toNormal $ ns !! j0)
+      vertex (toVertex $ vs ! j0)
+      normal (toNormal $ ns !! j1)
+      vertex (toVertex $ vs ! j1)
+      normal (toNormal $ ns !! j2)
+      vertex (toVertex $ vs ! j2)
+      where
+        toNormal (x,y,z) = Normal3 x y z
+        toVertex (x,y,z) = Vertex3 x y z
 
 resize :: Double -> Size -> IO ()
 resize zoom s@(Size w h) = do
@@ -72,11 +89,9 @@ resize zoom s@(Size w h) = do
     h' = realToFrac h
 
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
-         -> IORef [Color4 GLfloat]
-         -> IORef Int -- color palette
          -> IORef Double -- zoom
          -> KeyboardCallback
-keyboard rot1 rot2 rot3 colorsRef p zoom char _ = do
+keyboard rot1 rot2 rot3 zoom char _ = do
   case char of
     'e' -> rot1 $~! subtract 2
     'r' -> rot1 $~! (+ 2)
@@ -86,11 +101,6 @@ keyboard rot1 rot2 rot3 colorsRef p zoom char _ = do
     'i' -> rot3 $~! (+ 2)
     'm' -> zoom $~! (+ 1)
     'l' -> zoom $~! subtract 1
-    'p' -> do
-             p $~! (\i -> (i+1) `mod` 5)
-             p' <- get p
-             let (triangles, d2max) = trianglesWonderTree
-             writeIORef colorsRef $ map (funColor p' d2max) triangles
     'q' -> leaveMainLoop
     _   -> return ()
   postRedisplay Nothing
@@ -116,21 +126,17 @@ main = do
   rot2 <- newIORef 0.0
   rot3 <- newIORef 0.0
   zoom <- newIORef 0.0
-  colorsRef <- newIORef (map (funColor 0 (snd trianglesWonderTree)) (fst trianglesWonderTree))
-  pRef <- newIORef 0
   displayCallback $= display Context {contextRot1 = rot1,
                                       contextRot2 = rot2,
                                       contextRot3 = rot3,
-                                      contextZoom = zoom,
-                                      contextColors = colorsRef}
+                                      contextZoom = zoom}
   reshapeCallback $= Just (resize 0)
-  keyboardCallback $= Just (keyboard rot1 rot2 rot3 colorsRef pRef zoom)
+  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
   idleCallback $= Nothing
   putStrLn "*** Wonder tree ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\
         \    Zoom: l, m\n\
-        \    Change color palette: p (this takes a while...) \n\
         \"
   mainLoop

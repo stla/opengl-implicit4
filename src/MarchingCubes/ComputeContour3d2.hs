@@ -29,9 +29,9 @@ computeContour3d' :: Voxel -> Maybe Double -> Double -> Bool
 computeContour3d' voxel voxmax level summary = do
   (ppCDouble, nrows) <- computeContour3d voxel voxmax level
   points <- mapM (peekArray 3) =<< peekArray nrows ppCDouble
+  let xyzbounds = thd3 voxel
+      nxyz = snd3 voxel
   when summary $ do
-    let nxyz = snd3 voxel
-    let xyzbounds = thd3 voxel
     let tpoints = transpose (map (map realToFrac) points)
         xm = minimum (tpoints !! 0)
         xM = maximum (tpoints !! 0)
@@ -44,9 +44,17 @@ computeContour3d' voxel voxmax level summary = do
     putStrLn "Bounds:"
     print (rescale xyzbounds nxyz (xm,ym,zm), rescale xyzbounds nxyz (xM,yM,zM))
   let points' = fromList $ map ((\p -> (p!!0, p!!1, p!!2)) . map realToFrac) points
-  let faces = chunksOf 3 [0 .. VU.length points']
-  let mesh = undupMesh (points', faces)
-  return (mesh, normals mesh)
+      points'' = VU.map (rescale xyzbounds nxyz) points'
+      faces = chunksOf 3 [0 .. VU.length points'' - 1]
+      mesh = undupMesh (points'', faces)
+  putStrLn "length points:"
+  print $ VU.length points'
+  putStrLn "length new points:"
+  print $ VU.length $ fst mesh
+  putStrLn "mesh unduped"
+  let nrmls = normals mesh
+  putStrLn "normals done"
+  return (mesh, nrmls)
 
 -- computeContour3d'' :: Voxel -> Maybe Double -> Double -> Bool -> IO [Triangle]
 -- computeContour3d'' voxel voxmax level summary = do

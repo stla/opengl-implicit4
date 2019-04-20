@@ -63,7 +63,7 @@ library
                      , Mesh.Normals
                      , MarchingCubes.ComputeContour3d2
                      , MarchingCubes2
---                     , WonderTree2
+                     , WonderTree2
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
