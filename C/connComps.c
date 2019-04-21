@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
     unsigned int first;
@@ -90,5 +91,6 @@ int* connComps(unsigned int *faces, unsigned int order){
       exit(1);
   }
   free(edges);
+  printf("There are %u components.\n", c);
   return components;
 }

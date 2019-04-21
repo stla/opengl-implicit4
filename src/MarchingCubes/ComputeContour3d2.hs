@@ -4,13 +4,13 @@ module MarchingCubes.ComputeContour3d2
 import           Control.Monad                  (when, (=<<))
 import           Data.List                      (transpose)
 import           Data.List.Split                (chunksOf)
-import           Data.Tuple.Extra               (snd3, thd3, second)
+import           Data.Tuple.Extra               (snd3, thd3)
 import           Data.Vector.Unboxed            (Vector, fromList)
 import qualified Data.Vector.Unboxed            as VU
 import           Foreign.Marshal.Array          (peekArray)
 import           MarchingCubes.ComputeContour3d (computeContour3d)
 import           MarchingCubes.Voxel
-import           Mesh.ConnectedComponents
+import           Mesh.ConnectedComponents2
 import           Mesh.Normals
 import           Mesh.Undup
 
@@ -55,7 +55,8 @@ computeContour3d' voxel voxmax level isolate summary = do
   putStrLn "mesh unduped"
   if isolate
     then do
-      let mesh' = second biggestComponent mesh
+      faces' <- biggestComponent (snd mesh)
+      let mesh' = (fst mesh, faces')
       putStrLn "number of faces:"
       print $ length (snd mesh')
       let nrmls = normals mesh -- pb if normals mesh'
@@ -98,9 +99,12 @@ computeContour3d'' voxel voxmax level isolate summary = do
   putStrLn "mesh unduped"
   if isolate
     then do
-      let mesh' = second biggestComponent mesh
+      putStrLn "Isolating"
+      faces' <- biggestComponent (snd mesh)
+      let mesh' = (fst mesh, faces')
       putStrLn "number of faces:"
       print $ length (snd mesh')
+      putStrLn "Computing normals"
       let nrmls = normals mesh -- pb if normals mesh'
       print $ length nrmls
       putStrLn "normals done"
