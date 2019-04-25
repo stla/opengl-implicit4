@@ -2,8 +2,7 @@ module Mandelbulb2
   ( main )
   where
 import           Data.IORef
-import           Data.Tuple.Extra             (second)
-import           Data.Vector.Unboxed          (Vector, (!), fromList)
+import           Data.Vector.Unboxed          (Vector, (!))
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
 import           MarchingCubes2
@@ -43,14 +42,11 @@ fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
 
 voxel :: Voxel
 voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
-                  (70, 70, 70)
+                  (90, 90, 90)
 
-mandelbulb :: ((Vector XYZ, [[Int]]), [XYZ])
+mandelbulb :: ((Vector XYZ, [[Int]]), Vector XYZ)
 {-# NOINLINE mandelbulb #-}
-mandelbulb = unsafePerformIO $ computeContour3d'' voxel Nothing 2.0 True True
-
-mandelbulb' :: ((Vector XYZ, [[Int]]), Vector XYZ)
-mandelbulb' = second fromList mandelbulb
+mandelbulb = unsafePerformIO $ computeContour3d' voxel Nothing 2.0 True True
 
 display :: Context -> DisplayCallback
 display context = do
@@ -58,9 +54,9 @@ display context = do
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  let vertices = fst $ fst mandelbulb'
-      faces = snd $ fst mandelbulb'
-      normals = snd mandelbulb'
+  let vertices = fst $ fst mandelbulb
+      faces = snd $ fst mandelbulb
+      normals = snd mandelbulb
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity

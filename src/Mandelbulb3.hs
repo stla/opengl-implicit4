@@ -1,44 +1,66 @@
-module WonderTree2
+module Mandelbulb3
   ( main )
   where
 import           Data.IORef
 import           Data.Vector.Unboxed          (Vector, (!))
+import qualified Data.Vector.Unboxed as VU
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
 import           MarchingCubes2
 import           System.IO.Unsafe
+import           Utils.Palettes
+import           Utils.Color4Unbox
 
 type XYZ = (Double, Double, Double)
 
-white,black,navy :: Color4 GLfloat
+white,black :: Color4 GLfloat
 white = Color4 1 1 1 1
 black = Color4 0 0 0 1
-navy = Color4 0 0 0.5 1
+
+funColor :: Double -> Double -> Double -> Color4 GLfloat
+funColor dmin dmax d = clrs !! j
+  where
+  clrs = colorRamp' "inferno" 256
+  j = floor((d-dmin)*255/(dmax-dmin))
 
 data Context = Context
     {
-      contextRot1 :: IORef GLfloat
-    , contextRot2 :: IORef GLfloat
-    , contextRot3 :: IORef GLfloat
-    , contextZoom :: IORef Double
+      contextRot1      :: IORef GLfloat
+    , contextRot2      :: IORef GLfloat
+    , contextRot3      :: IORef GLfloat
+    , contextZoom      :: IORef Double
     }
 
-fWonderTree :: XYZ -> Double
-fWonderTree (x,y,z) =
-  cos(4*x/(xyz+0.0001)) + sin(4*y/(xyz+0.0001)) +
-  cos(4*y/(xyz+0.0001)) + sin(4*z/(xyz+0.0001)) +
-  cos(4*z/(xyz+0.0001)) + sin(4*x/(xyz+0.0001)) +
-  exp(0.1*(xyz-0.2)) - exp(-10*(xyz-0.15))
+fMandelbulb :: XYZ -> Double
+fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
   where
-  xyz = x*x+y*y+z*z
+  ssq (x,y,z) = x*x + y*y + z*z
+  go :: Int -> XYZ -> Double -> Double
+  go n (x,y,z) r2 =
+    if r2 > 4
+      then sqrt r2
+      else
+        let theta = 8 * atan2 (sqrt(x*x+y*y)) z in
+        let phi = 8 * atan2 y x in
+        let r8 = r2*r2*r2*r2 in
+        let xyz = ( r8 * cos phi * sin theta + x0
+                  , r8 * sin phi * sin theta + y0
+                  , r8 * cos theta + z0) in
+        if n>1 then go (n-1) xyz (ssq xyz) else sqrt r2
 
 voxel :: Voxel
-voxel = makeVoxel fWonderTree ((-1.9,1.3),(-1.9,1.3),(-1.9,1.3))
-                              (50, 50, 50)
+voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
+                  (50, 50, 50)
 
-wonderTree :: ((Vector XYZ, [[Int]]), Vector XYZ)
-{-# NOINLINE wonderTree #-}
-wonderTree = unsafePerformIO $ computeContour3d' voxel Nothing 0.0 False True
+mandelbulb :: (((Vector XYZ, [[Int]]), Vector XYZ), Vector Double)
+{-# NOINLINE mandelbulb #-}
+mandelbulb = unsafePerformIO $ computeContour3d'' voxel Nothing 2.0 True True
+
+colors :: Vector (Color4 GLfloat)
+colors = VU.map (funColor dmin dmax) (snd mandelbulb)
+  where
+  dmin = VU.minimum (snd mandelbulb)
+  dmax = VU.maximum (snd mandelbulb)
 
 display :: Context -> DisplayCallback
 display context = do
@@ -46,9 +68,9 @@ display context = do
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  let vertices = fst $ fst wonderTree
-      faces = snd $ fst wonderTree
-      normals = snd wonderTree
+  let vertices = fst $ fst $ fst mandelbulb
+      faces = snd $ fst $ fst mandelbulb
+      normals = snd $ fst mandelbulb
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -64,12 +86,14 @@ display context = do
       let j0 = face !! 0
           j1 = face !! 2
           j2 = face !! 1
-      materialDiffuse Front $= navy
       normal (toNormal $ ns ! j0)
+      materialDiffuse Front $= colors ! j0
       vertex (toVertex $ vs ! j0)
       normal (toNormal $ ns ! j1)
+      materialDiffuse Front $= colors ! j1
       vertex (toVertex $ vs ! j1)
       normal (toNormal $ ns ! j2)
+      materialDiffuse Front $= colors ! j2
       vertex (toVertex $ vs ! j2)
       where
         toNormal (x,y,z) = Normal3 x y z
@@ -81,7 +105,7 @@ resize zoom s@(Size w h) = do
   matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  lookAt (Vertex3 0 0 (-7+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 0 (-3+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
   matrixMode $= Modelview 0
   where
     w' = realToFrac w
@@ -90,8 +114,8 @@ resize zoom s@(Size w h) = do
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef Double -- zoom
          -> KeyboardCallback
-keyboard rot1 rot2 rot3 zoom char _ = do
-  case char of
+keyboard rot1 rot2 rot3 zoom c _ = do
+  case c of
     'e' -> rot1 $~! subtract 2
     'r' -> rot1 $~! (+ 2)
     't' -> rot2 $~! subtract 2
@@ -104,16 +128,17 @@ keyboard rot1 rot2 rot3 zoom char _ = do
     _   -> return ()
   postRedisplay Nothing
 
+
 main :: IO ()
 main = do
   _ <- getArgsAndInitialize
-  _ <- createWindow "Wonder tree"
+  _ <- createWindow "Mandelbulb"
   windowSize $= Size 500 500
   initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
   clearColor $= white
   materialAmbient Front $= black
   lighting $= Enabled
---  lightModelTwoSide $= Enabled
+  -- lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
   position (Light 0) $= Vertex4 0 0 (-100) 1
   ambient (Light 0) $= black
@@ -121,7 +146,7 @@ main = do
   specular (Light 0) $= white
   depthFunc $= Just Less
   shadeModel $= Smooth
-  cullFace $= Just Back
+--  cullFace $= Just Back
   rot1 <- newIORef 0.0
   rot2 <- newIORef 0.0
   rot3 <- newIORef 0.0
@@ -133,7 +158,7 @@ main = do
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
   idleCallback $= Nothing
-  putStrLn "*** Wonder tree ***\n\
+  putStrLn "*** Mandelbulb ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\

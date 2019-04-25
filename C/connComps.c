@@ -70,6 +70,7 @@ int* connComps(unsigned int *faces, unsigned int order){
       exit(1);
   }
   unsigned nconnections;
+  printf("Calculate edges ...\n");
   for(unsigned int i=0; i<order; i++){
   	nconnections = 0;
   	for(unsigned int j=i+1; j<order; j++){
@@ -85,6 +86,8 @@ int* connComps(unsigned int *faces, unsigned int order){
   		}
   	}
   }
+  printf("done.\n");
+  printf("Calculate connected components...\n");
   c = connected_components(edges, n, order, &components);
   if(components == NULL) {
       free(edges);

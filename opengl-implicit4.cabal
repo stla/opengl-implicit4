@@ -66,6 +66,8 @@ library
                      , WonderTree2
                      , Mandelbulb2
                      , Mesh.ConnectedComponents2
+                     , Mandelbulb3
+                     , Utils.Color4Unbox
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
@@ -82,6 +84,7 @@ library
                      , linear
                      , ilist
                      , Unique
+                     , vector-th-unbox
   default-language:    Haskell2010
   other-extensions:    ForeignFunctionInterface
   include-dirs:        C
