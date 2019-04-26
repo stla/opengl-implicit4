@@ -1,39 +1,49 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <cirque.h>
 
 typedef struct {
     unsigned int first;
     unsigned int second;
 } edge;
 
-void connected_components_recursive(const edge *edges, unsigned int n,
+static void connected_components_internal(const edge *edges, unsigned int n,
         int *components, unsigned int order, unsigned int vertex,
-        int component)
+        unsigned int component)
 {
     unsigned int i;
     /* Put this vertex in the current component */
     components[vertex] = component;
-    for (i = 0; i < n; i++) {
-        if (edges[i].first == vertex || edges[i].second == vertex) {
-            /* Adjacent */
-            const unsigned int neighbour = edges[i].first == vertex ?
-                    edges[i].second : edges[i].first;
-            if (components[neighbour] == -1) {
-                /* Not yet visited */
-                connected_components_recursive(edges, n, components, order, neighbour, component);
+    cirque *queue = cirque_create();
+    if (!queue) {
+        cirque_delete(queue);
+        exit(1);
+    }
+    cirque_insert(queue, &vertex);
+    while (cirque_get_count(queue)) {
+        unsigned int e;
+        unsigned int *current = cirque_remove(queue);
+        for (e = 0; e < n; e++) {
+            if (edges[e].first == *current || edges[e].second == *current) {
+                const unsigned int *neighbour = edges[e].first == *current ?
+                    &edges[e].second : &edges[e].first;
+                if (components[*neighbour] == -1) {
+                    components[*neighbour] = component;
+                    cirque_insert(queue, (void*)neighbour);
+                }
             }
         }
     }
+    cirque_delete(queue);
 }
 
 unsigned int connected_components(const edge *edges, unsigned int n, unsigned int order,
-        int **components)
+   int **components)
 {
     unsigned int i;
-    int component = 0;
+    unsigned int component = 0;
     *components = malloc(order * sizeof(int));
     if (components == NULL) {
-        printf("malloc components failed\n");
         exit(1);
     }
     for (i = 0; i < order; i++) {
@@ -42,7 +52,7 @@ unsigned int connected_components(const edge *edges, unsigned int n, unsigned in
 
     for (i = 0; i < order; i++) {
         if ((*components)[i] == -1) {
-            connected_components_recursive(edges, n, *components, order, i, component);
+            connected_components_internal(edges, n, *components, order, i, component);
             component++;
         }
     }

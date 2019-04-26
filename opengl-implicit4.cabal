@@ -91,7 +91,8 @@ library
   C-sources:           C/utils.c
                      , C/tables.c
                      , C/marchingCubes.c
-                     , C/connComps.c
+                     , C/connComps2.c
+                     , C/cirque.c
   ghc-options:         -Wall
 
 -- executable testmc

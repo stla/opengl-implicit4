@@ -97,6 +97,8 @@ computeContour3d' voxel voxmax level isolate summary = do
   putStrLn "length new points:"
   print $ VU.length $ fst mesh
   putStrLn "mesh unduped"
+  putStrLn "number of faces:"
+  print $ length (snd mesh)
   if isolate
     then do
       putStrLn "Isolating"

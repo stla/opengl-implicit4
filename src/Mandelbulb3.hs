@@ -50,7 +50,7 @@ fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
 
 voxel :: Voxel
 voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
-                  (50, 50, 50)
+                  (64, 64, 64)
 
 mandelbulb :: (((Vector XYZ, [[Int]]), Vector XYZ), Vector Double)
 {-# NOINLINE mandelbulb #-}
