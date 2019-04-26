@@ -65,9 +65,11 @@ library
                      , MarchingCubes2
                      , WonderTree2
                      , Mandelbulb2
-                     , Mesh.ConnectedComponents2
+                     , Mesh.ConnectedComponents3
                      , Mandelbulb3
                      , Utils.Color4Unbox
+                     , Mesh.Edges
+                     , Mesh.ConnectedComponents4
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
@@ -85,13 +87,15 @@ library
                      , ilist
                      , Unique
                      , vector-th-unbox
+                     , combinat
+                     , permutation
   default-language:    Haskell2010
   other-extensions:    ForeignFunctionInterface
   include-dirs:        C
   C-sources:           C/utils.c
                      , C/tables.c
                      , C/marchingCubes.c
-                     , C/connComps2.c
+                     , C/connComps3.c
                      , C/cirque.c
   ghc-options:         -Wall
 

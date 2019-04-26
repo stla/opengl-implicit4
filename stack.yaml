@@ -18,3 +18,5 @@ extra-deps:
 - diagrams-svg-1.4.2
 - diagrams-solve-0.1.1
 - dual-tree-0.2.2
+- combinat-0.2.9.0
+- permutation-0.5.0.5

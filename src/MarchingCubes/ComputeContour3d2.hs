@@ -10,7 +10,7 @@ import qualified Data.Vector.Unboxed            as VU
 import           Foreign.Marshal.Array          (peekArray)
 import           MarchingCubes.ComputeContour3d (computeContour3d)
 import           MarchingCubes.Voxel
-import           Mesh.ConnectedComponents2
+import           Mesh.ConnectedComponents4
 import           Mesh.Normals
 import           Mesh.Undup
 
@@ -109,6 +109,7 @@ computeContour3d' voxel voxmax level isolate summary = do
       putStrLn "Computing normals"
       let nrmls = normals mesh -- pb if normals mesh'
       print $ length nrmls
+      print $ last normals
       putStrLn "normals done"
       return (mesh', fromList nrmls)
     else do
