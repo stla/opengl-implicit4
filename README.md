@@ -73,3 +73,5 @@ Enzensberger star:
 Mandelbulb:
 
 ![Imgur](https://i.imgur.com/kMwd0DW.png)
+
+![Imgur](https://i.imgur.com/Sdhr0lB.png)

@@ -50,7 +50,7 @@ fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
 
 voxel :: Voxel
 voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
-                  (128, 128, 128)
+                  (64, 64, 64)
 
 mandelbulb :: (((Vector XYZ, [[Int]]), Vector XYZ), Vector Double)
 {-# NOINLINE mandelbulb #-}
@@ -62,15 +62,32 @@ colors = VU.map (funColor dmin dmax) (snd mandelbulb)
   dmin = VU.minimum (snd mandelbulb)
   dmax = VU.maximum (snd mandelbulb)
 
+vertices = fst $ fst $ fst mandelbulb
+faces = snd $ fst $ fst mandelbulb
+normals = snd $ fst mandelbulb
+
+triangle :: [Int] -> ((XYZ, XYZ, XYZ), (XYZ, XYZ, XYZ), (Color4 GLfloat, Color4 GLfloat, Color4 GLfloat))
+triangle face =
+  ( (vertices ! i, vertices ! j, vertices ! k)
+  , (normals ! i, normals ! j, normals ! k)
+  , (colors ! i, colors ! j, colors ! k))
+  where
+  i = face !! 0
+  j = face !! 2
+  k = face !! 1
+
+triangles :: [((XYZ, XYZ, XYZ), (XYZ, XYZ, XYZ), (Color4 GLfloat, Color4 GLfloat, Color4 GLfloat))]
+triangles = map triangle faces
+
 display :: Context -> DisplayCallback
 display context = do
   clear [ColorBuffer, DepthBuffer]
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  let vertices = fst $ fst $ fst mandelbulb
-      faces = snd $ fst $ fst mandelbulb
-      normals = snd $ fst mandelbulb
+  -- let vertices = fst $ fst $ fst mandelbulb
+  --     faces = snd $ fst $ fst mandelbulb
+  --     normals = snd $ fst mandelbulb
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -79,22 +96,32 @@ display context = do
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
   renderPrimitive Triangles $
-    mapM_ (drawTriangle vertices normals) faces
+    mapM_ drawTriangle triangles -- (drawTriangle vertices normals) faces
   swapBuffers
   where
-    drawTriangle vs ns face = do
-      let j0 = face !! 0
-          j1 = face !! 2
-          j2 = face !! 1
-      normal (toNormal $ ns ! j0)
-      materialDiffuse Front $= colors ! j0
-      vertex (toVertex $ vs ! j0)
-      normal (toNormal $ ns ! j1)
-      materialDiffuse Front $= colors ! j1
-      vertex (toVertex $ vs ! j1)
-      normal (toNormal $ ns ! j2)
-      materialDiffuse Front $= colors ! j2
-      vertex (toVertex $ vs ! j2)
+    drawTriangle ((v1,v2,v3),(n1,n2,n3),(c1,c2,c3)) = do
+      normal (toNormal n1)
+      materialDiffuse Front $= c1
+      vertex (toVertex v1)
+      normal (toNormal n2)
+      materialDiffuse Front $= c2
+      vertex (toVertex v2)
+      normal (toNormal n3)
+      materialDiffuse Front $= c3
+      vertex (toVertex v3)
+    -- drawTriangle vs ns face = do
+    --   let j0 = face ! 0
+    --       j1 = face ! 2
+    --       j2 = face ! 1
+    --   normal (toNormal $ ns ! j0)
+    --   materialDiffuse Front $= colors ! j0
+    --   vertex (toVertex $ vs ! j0)
+    --   normal (toNormal $ ns ! j1)
+    --   materialDiffuse Front $= colors ! j1
+    --   vertex (toVertex $ vs ! j1)
+    --   normal (toNormal $ ns ! j2)
+    --   materialDiffuse Front $= colors ! j2
+    --   vertex (toVertex $ vs ! j2)
       where
         toNormal (x,y,z) = Normal3 x y z
         toVertex (x,y,z) = Vertex3 x y z
