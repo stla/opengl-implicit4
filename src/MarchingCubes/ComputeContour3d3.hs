@@ -62,6 +62,7 @@ computeContour3d' voxel voxmax level isolate summary = do
           mesh' = (fst mesh, faces')
       putStrLn "number of faces:"
       print $ length (snd mesh')
+      print $ last (snd mesh')
       putStrLn "Computing normals"
       let nrmls = normals mesh -- pb if normals mesh'
       print $ length nrmls

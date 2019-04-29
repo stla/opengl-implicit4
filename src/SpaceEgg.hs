@@ -1,4 +1,4 @@
-module Mandelbulb3
+module SpaceEgg
   ( main )
   where
 import           Data.IORef
@@ -20,7 +20,7 @@ black = Color4 0 0 0 1
 funColor :: Double -> Double -> Double -> Color4 GLfloat
 funColor dmin dmax d = clrs !! j
   where
-  clrs = colorRamp' "inferno" 256
+  clrs = colorRamp' "viridis" 256
   j = floor((d-dmin)*255/(dmax-dmin))
 
 data Context = Context
@@ -31,45 +31,35 @@ data Context = Context
     , contextZoom      :: IORef Double
     }
 
-fMandelbulb :: XYZ -> Double
-fMandelbulb p0@(x0,y0,z0) = if ssq p0 >= 4 then 0/0 else go 24 p0 (ssq p0)
+fEgg :: XYZ -> Double
+fEgg (x,y,z) =
+  - sq(cos x * sin y + cos y * sin z + cos z * sin x) +
+    0.05-exp(100.0*(x*x/64+y*y/64 + z*z/(1.6*64)*exp(-0.4*z/8) - 1))
   where
-  ssq (x,y,z) = x*x + y*y + z*z
-  go :: Int -> XYZ -> Double -> Double
-  go n (x,y,z) r2 =
-    if r2 > 4
-      then sqrt r2
-      else
-        let theta = 8 * atan2 (sqrt(x*x+y*y)) z in
-        let phi = 8 * atan2 y x in
-        let r8 = r2*r2*r2*r2 in
-        let xyz = ( r8 * cos phi * sin theta + x0
-                  , r8 * sin phi * sin theta + y0
-                  , r8 * cos theta + z0) in
-        if n>1 then go (n-1) xyz (ssq xyz) else sqrt r2
+  sq a = a*a
 
 voxel :: Voxel
-voxel = makeVoxel fMandelbulb ((-1.1,1.1),(-1.1,1.1),(-1.1,1.1))
-                  (64, 64, 64)
+voxel = makeVoxel fEgg ((-7.6,7.6),(-7.6,7.6),(-8,14))
+                  (200, 200, 200)
 
-mandelbulb :: (((Vector XYZ, [[Int]]), Vector XYZ), Vector Double)
-{-# NOINLINE mandelbulb #-}
-mandelbulb = unsafePerformIO $ computeContour3d'' voxel Nothing 2.0 True True
+egg :: (((Vector XYZ, [[Int]]), Vector XYZ), Vector Double)
+{-# NOINLINE egg #-}
+egg = unsafePerformIO $ computeContour3d'' voxel Nothing 0.0 False True
 
 colors :: Vector (Color4 GLfloat)
-colors = VU.map (funColor dmin dmax) (snd mandelbulb)
+colors = VU.map (funColor dmin dmax) (snd egg)
   where
-  dmin = VU.minimum (snd mandelbulb)
-  dmax = VU.maximum (snd mandelbulb)
+  dmin = VU.minimum (snd egg)
+  dmax = VU.maximum (snd egg)
 
 vertices :: Vector XYZ
-vertices = fst $ fst $ fst mandelbulb
+vertices = fst $ fst $ fst egg
 
 faces :: [[Int]]
-faces = snd $ fst $ fst mandelbulb
+faces = snd $ fst $ fst egg
 
 normals :: Vector XYZ
-normals = snd $ fst mandelbulb
+normals = snd $ fst egg
 
 triangle :: [Int] -> ((XYZ, XYZ, XYZ), (XYZ, XYZ, XYZ), (Color4 GLfloat, Color4 GLfloat, Color4 GLfloat))
 triangle face =
@@ -90,9 +80,6 @@ display context = do
   r1 <- get (contextRot1 context)
   r2 <- get (contextRot2 context)
   r3 <- get (contextRot3 context)
-  -- let vertices = fst $ fst $ fst mandelbulb
-  --     faces = snd $ fst $ fst mandelbulb
-  --     normals = snd $ fst mandelbulb
   zoom <- get (contextZoom context)
   (_, size) <- get viewport
   loadIdentity
@@ -101,32 +88,19 @@ display context = do
   rotate r2 $ Vector3 0 1 0
   rotate r3 $ Vector3 0 0 1
   renderPrimitive Triangles $
-    mapM_ drawTriangle triangles -- (drawTriangle vertices normals) faces
+    mapM_ drawTriangle triangles
   swapBuffers
   where
     drawTriangle ((v1,v2,v3),(n1,n2,n3),(c1,c2,c3)) = do
       normal (toNormal n1)
-      materialDiffuse Front $= c1
+      materialDiffuse FrontAndBack $= c1
       vertex (toVertex v1)
       normal (toNormal n2)
-      materialDiffuse Front $= c2
+      materialDiffuse FrontAndBack $= c2
       vertex (toVertex v2)
       normal (toNormal n3)
-      materialDiffuse Front $= c3
+      materialDiffuse FrontAndBack $= c3
       vertex (toVertex v3)
-    -- drawTriangle vs ns face = do
-    --   let j0 = face ! 0
-    --       j1 = face ! 2
-    --       j2 = face ! 1
-    --   normal (toNormal $ ns ! j0)
-    --   materialDiffuse Front $= colors ! j0
-    --   vertex (toVertex $ vs ! j0)
-    --   normal (toNormal $ ns ! j1)
-    --   materialDiffuse Front $= colors ! j1
-    --   vertex (toVertex $ vs ! j1)
-    --   normal (toNormal $ ns ! j2)
-    --   materialDiffuse Front $= colors ! j2
-    --   vertex (toVertex $ vs ! j2)
       where
         toNormal (x,y,z) = Normal3 x y z
         toVertex (x,y,z) = Vertex3 x y z
@@ -137,7 +111,7 @@ resize zoom s@(Size w h) = do
   matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  lookAt (Vertex3 0 0 (-3+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 (-36+zoom) 0) (Vertex3 0 0 0) (Vector3 0 0 1)
   matrixMode $= Modelview 0
   where
     w' = realToFrac w
@@ -164,15 +138,15 @@ keyboard rot1 rot2 rot3 zoom c _ = do
 main :: IO ()
 main = do
   _ <- getArgsAndInitialize
-  _ <- createWindow "Mandelbulb"
+  _ <- createWindow "Space egg"
   windowSize $= Size 500 500
   initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
   clearColor $= white
-  materialAmbient Front $= black
+  materialAmbient FrontAndBack $= black
   lighting $= Enabled
-  -- lightModelTwoSide $= Enabled
+  lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
-  position (Light 0) $= Vertex4 0 0 (-100) 1
+  position (Light 0) $= Vertex4 0 (-100) 0 1
   ambient (Light 0) $= black
   diffuse (Light 0) $= white
   specular (Light 0) $= white
@@ -190,7 +164,7 @@ main = do
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
   idleCallback $= Nothing
-  putStrLn "*** Mandelbulb ***\n\
+  putStrLn "*** Space egg ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\

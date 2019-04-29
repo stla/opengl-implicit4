@@ -65,13 +65,14 @@ library
                      , MarchingCubes2
                      , WonderTree2
                      , Mandelbulb2
---                     , Mesh.ConnectedComponents3
+                     , Mesh.ConnectedComponents3
                      , Mandelbulb3
                      , Utils.Color4Unbox
                      , Mesh.Edges
                      , Mesh.ConnectedComponents4
                      , Mesh.ConnectedComponents5
                      , MarchingCubes.ComputeContour3d3
+                     , SpaceEgg
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
@@ -87,9 +88,9 @@ library
                      , directory
                      , linear
                      , ilist
---                     , Unique
+                     , Unique
                      , vector-th-unbox
---                     , combinat
+                     , combinat
                      , permutation
   default-language:    Haskell2010
   other-extensions:    ForeignFunctionInterface

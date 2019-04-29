@@ -75,3 +75,7 @@ Mandelbulb:
 ![Imgur](https://i.imgur.com/kMwd0DW.png)
 
 ![Imgur](https://i.imgur.com/Sdhr0lB.png)
+
+Space egg:
+
+![Imgur](https://i.imgur.com/eQi0aPn.png)
