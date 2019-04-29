@@ -4,15 +4,15 @@ module Mesh.ConnectedComponents3
 import           Control.Monad              ((<$!>))
 import           Data.List                  (elemIndices, sort)
 import           Data.List.Unique           (count_)
-import           Data.Permute               (Permute, at, inverse)
+import           Data.Permute               (at, inverse)
 import qualified Data.Permute               as P
+import           Data.Vector                (fromList, (!))
 import           Foreign.C.Types
 import           Foreign.Marshal.Alloc      (free, mallocBytes)
 import           Foreign.Marshal.Array      (peekArray, pokeArray)
 import           Foreign.Ptr                (Ptr)
 import           Foreign.Storable           (sizeOf)
-import           Math.Combinat.Permutations (Permutation, permuteList,
-                                             toPermutation)
+import           Math.Combinat.Permutations (permuteList, toPermutation)
 
 type Faces = [[Int]]
 
@@ -37,4 +37,5 @@ biggestComponent faces = do
   connComps <- connectedComponents faces
   let counts = count_ connComps
       biggest = fst $ last counts
-  return [faces !! i | i <- elemIndices biggest connComps]
+      faces' = fromList faces
+  return [faces' ! i | i <- elemIndices biggest connComps]
