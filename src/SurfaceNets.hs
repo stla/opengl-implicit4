@@ -61,11 +61,11 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
       then
         vs
       else
-        vs |> (f2 grid (edgeTable !! mask) (S.replicate 3 0))
-  f2 :: [Double] -> Int -> Seq Double -> Seq Double
-  f2 grid edgeMask v0 = v
+        vs |> update2 (f2 grid (edgeTable !! mask) (S.replicate 3 0)) [x0,x1,x2]
+  f2 :: [Double] -> Int -> Seq Double -> (Seq Double, Double)
+  f2 grid edgeMask v0 = vAndEcount
     where
-    (v, eCount) = oloop 0 0.0 v0
+    vAndEcount = oloop 0 0.0 v0
       where
       oloop :: Int -> Double -> Seq Double -> (Seq Double, Double)
       oloop i ecount vx | i == 12 = (vx, ecount)
@@ -83,7 +83,6 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
                             g0 = grid !! e0
                             g1 = grid !! e1
                             t = g0 / (g0-g1)
-
   f3 e0 e1 t v = v'
     where
     v' = iloop 0 1 v
@@ -91,13 +90,26 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
       iloop :: Int -> Int -> Seq Double -> Seq Double
       iloop j k vx | j == 3 = vx
                    | otherwise = 
-                     iloop (j+1) (shiftL k 1) (update (e0 .&. k) (e1 .&. k) vx j)
+                     iloop (j+1) (shiftL k 1) 
+                           (update (e0 .&. k) (e1 .&. k) vx j)
       update a b vx j = 
         if a /= b 
           then
             adjust' (+ (if a>0 then 1-t else t)) j vx
           else
             adjust' (+ (if a>0 then 1 else 0)) j vx
+  update2 (v, eCount) x = v'''
+    where
+      scx = (xmax - xmin) / (fromIntegral nx - 1)
+      scy = (ymax - ymin) / (fromIntegral ny - 1)
+      scz = (zmax - zmin) / (fromIntegral nz - 1)
+      x0 = fromIntegral (x !! 0)
+      x1 = fromIntegral (x !! 1)
+      x2 = fromIntegral (x !! 2)
+      v' = adjust' (\v0 -> scx * (x0 + v0 / eCount) + xmin) 0 v
+      v'' = adjust' (\v1 -> scy * (x1 + v1 / eCount) + ymin) 1 v'
+      v''' = adjust' (\v2 -> scz * (x2 + v2 / eCount) + zmin) 2 v''
+
 
 ftest :: (Double, Double, Double) -> Double
 ftest (x,y,z) = x*x + y*y + z*z - 1
