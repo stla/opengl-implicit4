@@ -73,6 +73,7 @@ library
                      , Mesh.ConnectedComponents5
                      , MarchingCubes.ComputeContour3d3
                      , SpaceEgg
+                     , SurfaceNets
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
