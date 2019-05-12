@@ -36,38 +36,40 @@ edgeTable = [
   771, 772, 212, 211, 205, 202, 182, 177, 175, 168, 124, 123, 101,
   98, 30, 25, 7, 0]
 
-surfaceNets :: Voxel -> Seq Int -- Seq (Seq Double)
+surfaceNets :: Voxel -> Seq [Int] -- Seq (Seq Double)
 surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
-  loop2 0 1 (S.empty, S.replicate (2*(nx+1)*(ny+1)) 0, S.empty)
+  loop2 0 1 (S.empty, S.replicate (2*r2') 0, S.empty) r2'
   where
-  loop2 :: Int -> Int -> (Seq (Seq Double), Seq Int, Seq [Int]) -> Seq Int -- Seq (Seq Double)
-  loop2 x2 b (vs,bf,fs) | x2 == nz-1 = bf -- vs
-                       | otherwise =
-                         loop2 (x2+1) (1-b) (loop1 0 x2 m (vs,bf,fs))
-                           where
-                           m = 1 + (nx + 1) * (1 + b * (ny + 1))
+  r2' = (nx+1)*(ny+1)
+  loop2 :: Int -> Int -> (Seq (Seq Double), Seq Int, Seq [Int]) -> Int -> Seq [Int] -- Seq (Seq Double)
+  loop2 x2 b (vs,bf,fs) r2 | x2 == nz-1 = fs -- vs
+                           | otherwise =
+                             loop2 (x2+1) (1-b) (loop1 0 x2 m (vs,bf,fs) r2) (-r2)
+                               where
+                               m = 1 + (nx + 1) * (1 + b * (ny + 1))
   -- loop1 :: Int -> Int -> Int -> Seq (Seq Double) -> Seq (Seq Double)
-  loop1 x1 x2 m (vs,bf,fs) | x1 == ny-1 = (vs,bf,fs)
-                          | otherwise =
-                            loop1 (x1+1) x2 (m+nx-1+2)
-                                  (loop0 0 x1 x2 m (vs,bf,fs))
-  loop0 x0 x1 x2 m (vs,bf,fs) | x0 == nx-1 = (vs,bf,fs)
+  loop1 x1 x2 m (vs,bf,fs) r2 | x1 == ny-1 = (vs,bf,fs)
                               | otherwise =
-                                loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m)
-  f1 vs fs x0 x1 x2 bf m = (vsv, bf', fs')
+                                loop1 (x1+1) x2 (m+nx-1+2)
+                                      (loop0 0 x1 x2 m (vs,bf,fs) r2) r2
+  loop0 x0 x1 x2 m (vs,bf,fs) r2 | x0 == nx-1 = (vs,bf,fs)
+                                 | otherwise =
+                                   loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m r2) r2
+  f1 vs fs x0 x1 x2 bf m r2 = (vsv, bf', fs')
     where
     grid = [dat !! (x0 + i + (x1 + j) * nx + (x2 + k) * nx * ny) |
             k <- [0,1], j <- [0,1], i <- [0,1]]
     is = imap (\i d -> if d<0 then shiftL (1::Int) i else (0::Int)) grid
     mask = foldr (.|.) 0 is
     edgeMask = edgeTable !! mask
-    (vsv,bf',fs') = if mask == 0 || mask == 255
+    (vsv, bf',fs') = if mask == 0 || mask == 255
       then
         (vs, bf, fs)
       else
+        let bf'' = update m (S.length vs) bf in 
         (vs |> v,
-         update m (S.length vs) bf,
-         updatef fs bf m mask edgeMask [x0,x1,x2])
+         bf'',
+         updatef fs bf'' m mask edgeMask [x0,x1,x2] r2)
       where
         v = updatevx2 (f2 grid edgeMask (S.replicate 3 0)) x0 x1 x2
   f2 :: [Double] -> Int -> Seq Double -> (Seq Double, Double)
@@ -118,18 +120,20 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
       v'' = adjust' (\v1 -> scy * (x1' + v1 / eCount) + ymin) 1 v'
       v''' = adjust' (\v2 -> scz * (x2' + v2 / eCount) + zmin) 2 v''
   updatef = loop 0
-  loop i fs bf m mask edgeMask x | i==3 = fs
+  loop i fs bf m mask eMask x r2 | i==3 = fs
                                  | otherwise =
-                                   if (edgeMask .&. shiftL 1 i) == 0 || (x !! iu) == 0 || (x !! iv) == 0
+                                   if (eMask .&. shiftL 1 i) == 0 ||
+                                      (x !! iu) == 0 || (x !! iv) == 0
                                      then
-                                       loop (i+1) fs bf m mask edgeMask x
+                                       loop (i+1) fs bf m mask eMask x r2
                                      else
-                                       loop (i+1) fs' bf m mask edgeMask x
+                                       loop (i+1) fs' bf m mask eMask x r2
                                    where
                                    iu = mod (i+1) 3
                                    iv = mod (i+2) 3
-                                   du = iu -- r !! iu
-                                   dv = iv -- r !! iv
+                                   r = [1, nx+1, r2]
+                                   du = r !! iu
+                                   dv = r !! iv
                                    (fc1, fc2) = if (mask .&. 1) > 0
                                      then
                                        ([index bf m, index bf (m-du), index bf (m-dv)],
