@@ -1,10 +1,11 @@
 module Mesh.Normals
-  (normals)
+  (normals, normals')
   where
 import           Data.IntMap.Strict  (IntMap, unionWith, elems)
 import qualified Data.IntMap.Strict  as M
-import           Data.List           (foldl')
-import           Data.Vector.Unboxed (Unbox, Vector, (!))
+import           Data.Foldable       (foldl')
+import           Data.Sequence       (Seq)
+import           Data.Vector.Unboxed (Unbox, Vector, (!), fromList)
 import           Linear              (V3 (..), cross, signorm, (^+^), (^-^))
 
 -- vertices :: Vector (Float,Float,Float)
@@ -38,3 +39,10 @@ normalsV3 (vs, faces) =
 
 normals :: (Floating a, Unbox a) => (Vector (a,a,a), [[Int]]) -> [(a,a,a)]
 normals mesh = map fromV3 (elems $ normalsV3 mesh)
+
+normalsV3' :: (Floating a, Unbox a) => (Vector (a,a,a), Seq [Int]) -> IntMap (V3 a)
+normalsV3' (vs, faces) =
+  M.map signorm (foldl' (unionWith (^+^)) M.empty (fmap (faceNormals vs) faces))
+
+normals' :: (Floating a, Unbox a) => (Vector (a,a,a), Seq [Int]) -> Vector (a,a,a)
+normals' mesh = fromList $ map fromV3 (elems $ normalsV3' mesh)

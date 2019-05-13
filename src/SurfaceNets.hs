@@ -1,10 +1,15 @@
 module SurfaceNets
   where
-import Data.Bits
-import Data.List.Index (imap)
-import Data.Sequence (Seq, (|>), adjust', update, index)
-import qualified Data.Sequence as S
-import MarchingCubes.Voxel -- (Voxel)
+import           Data.Bits
+import           Data.Foldable       (toList)
+import           Data.List.Index     (imap)
+import           Data.Tuple.Extra    (fst3, snd3, thd3)
+import           Data.Sequence       (Seq, adjust', index, update, (|>))
+import qualified Data.Sequence       as S
+import           Data.Vector.Unboxed ((!), fromList, Vector)
+import qualified Data.Vector.Unboxed as V
+import           MarchingCubes.Voxel
+import           Mesh.Normals        (normals')
 
 cubeEdges :: [Int]
 cubeEdges = [
@@ -36,13 +41,31 @@ edgeTable = [
   771, 772, 212, 211, 205, 202, 182, 177, 175, 168, 124, 123, 101,
   98, 30, 25, 7, 0]
 
-surfaceNets :: Voxel -> Seq [Int] -- Seq (Seq Double)
-surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
-  loop2 0 1 (S.empty, S.replicate (2*r2') 0, S.empty) r2'
+surfaceNets :: Voxel -> Double
+            -> ((Vector (Double,Double,Double), Seq [Int]), Vector (Double,Double,Double))
+surfaceNets voxel level = ((vertices'', faces), normals)
   where
-  r2' = (nx+1)*(ny+1)
-  loop2 :: Int -> Int -> (Seq (Seq Double), Seq Int, Seq [Int]) -> Int -> Seq [Int] -- Seq (Seq Double)
-  loop2 x2 b (vs,bf,fs) r2 | x2 == nz-1 = fs -- vs
+  dat = V.map (subtract level) (fromList $ fst3 voxel)
+  dims@(nx,ny,nz) = snd3 voxel
+  ((xmin,xmax),(ymin,ymax),(zmin,zmax)) = thd3 voxel
+  scx = (xmax - xmin) / (fromIntegral nx - 1)
+  scy = (ymax - ymin) / (fromIntegral ny - 1)
+  scz = (zmax - zmin) / (fromIntegral nz - 1)
+  mins = (xmin, ymin, zmin)
+  (vs, faces) = surfaceNetsInternal dat dims mins (scx,scy,scz)
+  vertices' = fmap (\s -> (index s 0, index s 1, index s 2)) vs
+  vertices'' = fromList $ toList vertices'
+  normals = normals' (vertices'',faces)
+
+surfaceNetsInternal :: Vector Double -> (Int,Int,Int) -> (Double,Double,Double)
+                    -> (Double,Double,Double) -> (Seq (Seq Double), Seq [Int])
+surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
+  let r2 = (nx+1)*(ny+1) in
+  loop2 0 1 (S.empty, S.replicate (2*r2) 0, S.empty) r2
+  where
+  loop2 :: Int -> Int -> (Seq (Seq Double), Seq Int, Seq [Int]) -> Int
+        -> (Seq (Seq Double), Seq [Int])
+  loop2 x2 b (vs,bf,fs) r2 | x2 == nz-1 = (vs, fs)
                            | otherwise =
                              loop2 (x2+1) (1-b) (loop1 0 x2 m (vs,bf,fs) r2) (-r2)
                                where
@@ -57,7 +80,7 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
                                    loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m r2) r2
   f1 vs fs x0 x1 x2 bf m r2 = (vsv, bf', fs')
     where
-    grid = [dat !! (x0 + i + (x1 + j) * nx + (x2 + k) * nx * ny) |
+    grid = [dat ! (x0 + i + (x1 + j) * nx + (x2 + k) * nx * ny) |
             k <- [0,1], j <- [0,1], i <- [0,1]]
     is = imap (\i d -> if d<0 then shiftL (1::Int) i else (0::Int)) grid
     mask = foldr (.|.) 0 is
@@ -66,7 +89,7 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
       then
         (vs, bf, fs)
       else
-        let bf'' = update m (S.length vs) bf in 
+        let bf'' = update m (S.length vs) bf in
         (vs |> v,
          bf'',
          updatef fs bf'' m mask edgeMask [x0,x1,x2] r2)
@@ -110,9 +133,9 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
             adjust' (+ (if a>0 then 1 else 0)) j vx
   updatevx2 (v, eCount) x0 x1 x2 = v'''
     where
-      scx = (xmax - xmin) / (fromIntegral nx - 1)
-      scy = (ymax - ymin) / (fromIntegral ny - 1)
-      scz = (zmax - zmin) / (fromIntegral nz - 1)
+      -- scx = (xmax - xmin) / (fromIntegral nx - 1)
+      -- scy = (ymax - ymin) / (fromIntegral ny - 1)
+      -- scz = (zmax - zmin) / (fromIntegral nz - 1)
       x0' = fromIntegral x0
       x1' = fromIntegral x1
       x2' = fromIntegral x2
@@ -147,5 +170,5 @@ surfaceNets (dat, (nx,ny,nz), ((xmin,xmax),(ymin,ymax),(zmin,zmax))) =
 ftest :: (Double, Double, Double) -> Double
 ftest (x,y,z) = x*x + y*y + z*z - 1
 
-voxel :: Voxel
-voxel = makeVoxel ftest ((-1,1), (-1,1), (-1,1)) (5,5,5)
+vxl :: Voxel
+vxl = makeVoxel ftest ((-1,1), (-1,1), (-1,1)) (5,5,5)
