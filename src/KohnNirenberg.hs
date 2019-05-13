@@ -1,14 +1,18 @@
 module KohnNirenberg
-  ( main, kn, voxel )
+  ( main )
   where
-import           Data.Foldable                (toList)
+import           Control.Monad                     (when)
+import qualified Data.ByteString                   as B
+import           Data.Foldable                     (toList)
 import           Data.IORef
-import           Data.Sequence                (Seq)
-import           Data.Vector.Unboxed          (Vector, (!))
+import           Data.Sequence                     (Seq)
+import           Data.Vector.Unboxed               (Vector, (!))
+import           Graphics.Rendering.OpenGL.Capture (capturePPM)
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
-import           MarchingCubes.Voxel          (makeVoxel, Voxel)
+import           MarchingCubes.Voxel               (Voxel, makeVoxel)
 import           SurfaceNets
+import           Text.Printf
 
 type XYZ = (Double, Double, Double)
 
@@ -19,10 +23,10 @@ navy = Color4 0 0 0.5 1
 
 data Context = Context
     {
-      contextRot1      :: IORef GLfloat
-    , contextRot2      :: IORef GLfloat
-    , contextRot3      :: IORef GLfloat
-    , contextZoom      :: IORef Double
+      contextRot1 :: IORef GLfloat
+    , contextRot2 :: IORef GLfloat
+    , contextRot3 :: IORef GLfloat
+    , contextZoom :: IORef Double
     }
 
 fKN :: XYZ -> Double
@@ -106,9 +110,11 @@ resize zoom s@(Size w h) = do
 
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef Double -- zoom
+         -> IORef Bool -- animation
          -> KeyboardCallback
-keyboard rot1 rot2 rot3 zoom c _ = do
+keyboard rot1 rot2 rot3 zoom anim c _ = do
   case c of
+    'a' -> writeIORef anim True
     'e' -> rot1 $~! subtract 2
     'r' -> rot1 $~! (+ 2)
     't' -> rot2 $~! subtract 2
@@ -120,6 +126,19 @@ keyboard rot1 rot2 rot3 zoom c _ = do
     'q' -> leaveMainLoop
     _   -> return ()
   postRedisplay Nothing
+
+idle :: IORef Bool -> IORef GLfloat -> IORef Int -> IdleCallback
+idle anim rot3 snapshots = do
+    a <- get anim
+    s <- get snapshots
+    when a $ do
+      when (s < 360) $ do
+        let ppm = printf "ppm/kohnNirenberg%04d.ppm" s
+        (>>=) capturePPM (B.writeFile ppm)
+        print s
+      rot3 $~! (+ 1.0)
+      snapshots $~! (+ 1)
+    postRedisplay Nothing
 
 
 main :: IO ()
@@ -148,8 +167,10 @@ main = do
                                       contextRot3 = rot3,
                                       contextZoom = zoom}
   reshapeCallback $= Just (resize 0)
-  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
-  idleCallback $= Nothing
+  snapshots <- newIORef 0
+  anim <- newIORef False
+  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom anim)
+  idleCallback $= Just (idle anim rot3 snapshots)
   putStrLn "*** Kohn-Nirenberg surface ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
