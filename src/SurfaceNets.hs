@@ -81,7 +81,7 @@ surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
                                    loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m r2) r2
   f1 vs fs x0 x1 x2 bf m r2 = (vsv, bf', fs')
     where
-    grid = [dat ! (x0 + i + (x1 + j) * nx + (x2 + k) * nx * ny) |
+    grid = [dat ! ((x0+i)*nz*ny + (x1+j)*nz + x2 + k) | 
             k <- [0,1], j <- [0,1], i <- [0,1]]
     is = imap (\i d -> if d<0 then shiftL (1::Int) i else (0::Int)) grid
     mask = foldr (.|.) 0 is

@@ -1,5 +1,5 @@
 module KohnNirenberg
-  ( main, kn )
+  ( main, kn, voxel )
   where
 import           Data.Foldable                (toList)
 import           Data.IORef
@@ -26,7 +26,7 @@ data Context = Context
     }
 
 fKN :: XYZ -> Double
-fKN (x,y,z') = -- x*x + y*y + z*z -1
+fKN (x,y,z') =
   z + z^2*b + b^4 + 15/7*b*(x^6 - 15*x^4*y^2 + 15*x^2*y^4 - y^6) +
     k*(x^2 + y^2 + z^2)^5
   where
@@ -98,7 +98,7 @@ resize zoom s@(Size w h) = do
   matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  lookAt (Vertex3 0 0 (-3+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 0 (-9+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
   matrixMode $= Modelview 0
   where
     w' = realToFrac w
@@ -125,13 +125,12 @@ keyboard rot1 rot2 rot3 zoom c _ = do
 main :: IO ()
 main = do
   _ <- getArgsAndInitialize
-  _ <- createWindow "Mandelbulb"
+  _ <- createWindow "Kohn-Nirenberg surface"
   windowSize $= Size 500 500
   initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
   clearColor $= white
   materialAmbient Front $= black
   lighting $= Enabled
-  -- lightModelTwoSide $= Enabled
   light (Light 0) $= Enabled
   position (Light 0) $= Vertex4 0 0 (-100) 1
   ambient (Light 0) $= black
@@ -139,7 +138,7 @@ main = do
   specular (Light 0) $= white
   depthFunc $= Just Less
   shadeModel $= Smooth
---  cullFace $= Just Back
+  cullFace $= Just Back
   rot1 <- newIORef 0.0
   rot2 <- newIORef 0.0
   rot3 <- newIORef 0.0
@@ -151,7 +150,7 @@ main = do
   reshapeCallback $= Just (resize 0)
   keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom)
   idleCallback $= Nothing
-  putStrLn "*** Mandelbulb ***\n\
+  putStrLn "*** Kohn-Nirenberg surface ***\n\
         \    To quit, press q.\n\
         \    Scene rotation:\n\
         \        e, r, t, y, u, i\n\
