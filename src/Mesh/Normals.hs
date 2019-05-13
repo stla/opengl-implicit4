@@ -27,6 +27,13 @@ normal v1 v2 v3 = signorm $ cross (v3' ^-^ v1') (v2' ^-^ v1')
   v2' = toV3 v2
   v3' = toV3 v3
 
+normal' :: Floating a => (a,a,a) -> (a,a,a) -> (a,a,a) -> V3 a
+normal' v1 v2 v3 = signorm $ cross (v2' ^-^ v1') (v3' ^-^ v1')
+  where
+  v1' = toV3 v1
+  v2' = toV3 v2
+  v3' = toV3 v3
+
 faceNormals :: (Floating a, Unbox a) => Vector (a,a,a) -> [Int] -> IntMap (V3 a)
 faceNormals vs face = M.fromList nrmls
   where
@@ -40,9 +47,15 @@ normalsV3 (vs, faces) =
 normals :: (Floating a, Unbox a) => (Vector (a,a,a), [[Int]]) -> [(a,a,a)]
 normals mesh = map fromV3 (elems $ normalsV3 mesh)
 
+faceNormals' :: (Floating a, Unbox a) => Vector (a,a,a) -> [Int] -> IntMap (V3 a)
+faceNormals' vs face = M.fromList nrmls
+  where
+  nrml = normal' (vs ! (face !! 0)) (vs ! (face !! 1)) (vs ! (face !! 2))
+  nrmls = map (\i -> (i, nrml)) face
+
 normalsV3' :: (Floating a, Unbox a) => (Vector (a,a,a), Seq [Int]) -> IntMap (V3 a)
 normalsV3' (vs, faces) =
-  M.map signorm (foldl' (unionWith (^+^)) M.empty (fmap (faceNormals vs) faces))
+  M.map signorm (foldl' (unionWith (^+^)) M.empty (fmap (faceNormals' vs) faces))
 
 normals' :: (Floating a, Unbox a) => (Vector (a,a,a), Seq [Int]) -> Vector (a,a,a)
 normals' mesh = fromList $ map fromV3 (elems $ normalsV3' mesh)

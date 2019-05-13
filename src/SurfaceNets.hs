@@ -1,4 +1,5 @@
 module SurfaceNets
+  (surfaceNets)
   where
 import           Data.Bits
 import           Data.Foldable       (toList)

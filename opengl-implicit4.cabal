@@ -74,6 +74,7 @@ library
                      , MarchingCubes.ComputeContour3d3
                      , SpaceEgg
                      , SurfaceNets
+                     , KohnNirenberg
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
