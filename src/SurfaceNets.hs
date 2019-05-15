@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module SurfaceNets
   (surfaceNets)
   where
@@ -66,22 +67,20 @@ surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
   where
   loop2 :: Int -> Int -> (Seq (Seq Double), Seq Int, Seq [Int]) -> Int
         -> (Seq (Seq Double), Seq [Int])
-  loop2 x2 b (vs,bf,fs) r2 | x2 == nz-1 = (vs, fs)
-                           | otherwise =
-                             loop2 (x2+1) (1-b) (loop1 0 x2 m (vs,bf,fs) r2) (-r2)
-                               where
-                               m = 1 + (nx + 1) * (1 + b * (ny + 1))
-  -- loop1 :: Int -> Int -> Int -> Seq (Seq Double) -> Seq (Seq Double)
-  loop1 x1 x2 m (vs,bf,fs) r2 | x1 == ny-1 = (vs,bf,fs)
-                              | otherwise =
-                                loop1 (x1+1) x2 (m+nx-1+2)
-                                      (loop0 0 x1 x2 m (vs,bf,fs) r2) r2
-  loop0 x0 x1 x2 m (vs,bf,fs) r2 | x0 == nx-1 = (vs,bf,fs)
-                                 | otherwise =
-                                   loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m r2) r2
+  loop2 x2 !b !(vs,bf,fs) !r2 | x2 == nz-1 = (vs, fs)
+    | otherwise =
+      loop2 (x2+1) (1-b) (loop1 0 x2 m (vs,bf,fs) r2) (-r2)
+        where
+        m = 1 + (nx + 1) * (1 + b * (ny + 1))
+  loop1 x1 !x2 !m !(vs,bf,fs) !r2 | x1 == ny-1 = (vs,bf,fs)
+    | otherwise =
+      loop1 (x1+1) x2 (m+nx-1+2) (loop0 0 x1 x2 m (vs,bf,fs) r2) r2
+  loop0 x0 !x1 !x2 !m !(vs,bf,fs) !r2 | x0 == nx-1 = (vs,bf,fs)
+    | otherwise =
+      loop0 (x0+1) x1 x2 (m+1) (f1 vs fs x0 x1 x2 bf m r2) r2
   f1 vs fs x0 x1 x2 bf m r2 = (vsv, bf', fs')
     where
-    grid = [dat ! ((x0+i)*nz*ny + (x1+j)*nz + x2 + k) | 
+    grid = [dat ! ((x0+i)*nz*ny + (x1+j)*nz + x2 + k) |
             k <- [0,1], j <- [0,1], i <- [0,1]]
     is = imap (\i d -> if d<0 then shiftL (1::Int) i else (0::Int)) grid
     mask = foldr (.|.) 0 is
@@ -102,30 +101,28 @@ surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
     vAndEcount = oloop 0 0.0 v0
       where
       oloop :: Int -> Double -> Seq Double -> (Seq Double, Double)
-      oloop i ecount vx | i == 12 = (vx, ecount)
-                        | otherwise =
-                          if edgeMask .&. shiftL 1 i == 0
-                            then
-                              oloop (i+1) ecount vx
-                            else
-                              oloop (i+1) (ecount+1)
-                                    (f3 e0 e1 t vx)
-                            where
-                            idx = shiftL i 1
-                            e0 = cubeEdges !! idx
-                            e1 = cubeEdges !! (idx + 1)
-                            g0 = grid !! e0
-                            g1 = grid !! e1
-                            t = g0 / (g0-g1)
+      oloop i !ecount !vx | i == 12 = (vx, ecount)
+        | otherwise =
+          if edgeMask .&. shiftL 1 i == 0
+            then
+              oloop (i+1) ecount vx
+            else
+              oloop (i+1) (ecount+1) (f3 e0 e1 t vx)
+            where
+            idx = shiftL i 1
+            e0 = cubeEdges !! idx
+            e1 = cubeEdges !! (idx + 1)
+            g0 = grid !! e0
+            g1 = grid !! e1
+            t = g0 / (g0-g1)
   f3 e0 e1 t v = v'
     where
     v' = iloop 0 1 v
       where
       iloop :: Int -> Int -> Seq Double -> Seq Double
-      iloop j k vx | j == 3 = vx
-                   | otherwise =
-                     iloop (j+1) (shiftL k 1)
-                           (updatevx (e0 .&. k) (e1 .&. k) vx j)
+      iloop j !k !vx | j == 3 = vx
+        | otherwise =
+          iloop (j+1) (shiftL k 1) (updatevx (e0 .&. k) (e1 .&. k) vx j)
       updatevx a b vx j =
         if a /= b
           then
@@ -134,9 +131,6 @@ surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
             adjust' (+ (if a>0 then 1 else 0)) j vx
   updatevx2 (v, eCount) x0 x1 x2 = v'''
     where
-      -- scx = (xmax - xmin) / (fromIntegral nx - 1)
-      -- scy = (ymax - ymin) / (fromIntegral ny - 1)
-      -- scz = (zmax - zmin) / (fromIntegral nz - 1)
       x0' = fromIntegral x0
       x1' = fromIntegral x1
       x2' = fromIntegral x2
@@ -144,28 +138,28 @@ surfaceNetsInternal dat (nx,ny,nz) (xmin,ymin,zmin) (scx,scy,scz) =
       v'' = adjust' (\v1 -> scy * (x1' + v1 / eCount) + ymin) 1 v'
       v''' = adjust' (\v2 -> scz * (x2' + v2 / eCount) + zmin) 2 v''
   updatef = loop 0
-  loop i fs bf m mask eMask x r2 | i==3 = fs
-                                 | otherwise =
-                                   if (eMask .&. shiftL 1 i) == 0 ||
-                                      (x !! iu) == 0 || (x !! iv) == 0
-                                     then
-                                       loop (i+1) fs bf m mask eMask x r2
-                                     else
-                                       loop (i+1) fs' bf m mask eMask x r2
-                                   where
-                                   iu = mod (i+1) 3
-                                   iv = mod (i+2) 3
-                                   r = [1, nx+1, r2]
-                                   du = r !! iu
-                                   dv = r !! iv
-                                   (fc1, fc2) = if (mask .&. 1) > 0
-                                     then
-                                       ([index bf m, index bf (m-du), index bf (m-dv)],
-                                        [index bf (m-dv), index bf (m-du), index bf (m-du-dv)])
-                                     else
-                                       ([index bf m, index bf (m-dv), index bf (m-du)],
-                                        [index bf (m-du), index bf (m-dv), index bf (m-du-dv)])
-                                   fs' = (fs |> fc1) |> fc2
+  loop i !fs !bf !m !mask !eMask !x !r2 | i==3 = fs
+    | otherwise =
+      if (eMask .&. shiftL 1 i) == 0 ||
+         (x !! iu) == 0 || (x !! iv) == 0
+        then
+          loop (i+1) fs bf m mask eMask x r2
+        else
+          loop (i+1) fs' bf m mask eMask x r2
+      where
+      iu = mod (i+1) 3
+      iv = mod (i+2) 3
+      r = [1, nx+1, r2]
+      du = r !! iu
+      dv = r !! iv
+      (fc1, fc2) = if (mask .&. 1) > 0
+        then
+          ([index bf m, index bf (m-du), index bf (m-dv)],
+           [index bf (m-dv), index bf (m-du), index bf (m-du-dv)])
+        else
+          ([index bf m, index bf (m-dv), index bf (m-du)],
+           [index bf (m-du), index bf (m-dv), index bf (m-du-dv)])
+      fs' = (fs |> fc1) |> fc2
 
 
 ftest :: (Double, Double, Double) -> Double
